@@ -285,7 +285,10 @@ function pqOrder(x: PanelItem, y: PanelItem): number {
   const kx = x.key ?? 0;
   const ky = y.key ?? 0;
   if (kx !== ky) return kx - ky;
-  return x.id < y.id ? -1 : x.id > y.id ? 1 : 0;
+  const tx = x.tie ?? 0;
+  const ty = y.tie ?? 0;
+  if (tx !== ty) return tx - ty;
+  return x.id.localeCompare(y.id, 'en', { numeric: true });
 }
 
 /** Removes a node from its parent (or from root). The node keeps its subtree. */

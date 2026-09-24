@@ -36,7 +36,10 @@ export type CompareResult = '<' | '=' | '>';
 export interface PanelItem {
   id: Id;
   label: string;
+  /** Priority for 'pq' panels (smaller pops first). */
   key?: number;
+  /** Secondary order for equal keys in 'pq' panels (e.g. node index). Falls back to id. */
+  tie?: number;
   /** The element/node this item stands for (drives linked-view highlighting). */
   ref?: Id;
   meta?: Record<string, Scalar>;

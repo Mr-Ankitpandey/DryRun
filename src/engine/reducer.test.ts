@@ -108,6 +108,14 @@ describe('reducer: panels', () => {
     expect(() => ev(s, { t: 'pop', panel: 'pq', itemId: 'q:1' })).toThrow(/minimum/);
     expect(() => ev(s, { t: 'push', panel: 'pq', item: { id: 'q:1', label: 'dup', key: 1 } })).toThrow(/duplicate/);
   });
+
+  it('pq breaks equal keys by tie, then numerically by id', () => {
+    let s = ev(emptyState(), { t: 'panel', panel: 'pq', kind: 'pq' });
+    s = ev(s, { t: 'push', panel: 'pq', item: { id: 'q:2', label: '(3, node 7)', key: 3, tie: 7 } });
+    s = ev(s, { t: 'push', panel: 'pq', item: { id: 'q:10', label: '(3, node 2)', key: 3, tie: 2 } });
+    s = ev(s, { t: 'push', panel: 'pq', item: { id: 'q:9', label: '(3, node 2 again)', key: 3, tie: 2 } });
+    expect(s.panels.pq?.items.map((i) => i.id)).toEqual(['q:9', 'q:10', 'q:2']);
+  });
 });
 
 describe('reducer: trees', () => {

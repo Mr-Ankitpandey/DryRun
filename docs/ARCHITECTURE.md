@@ -66,9 +66,12 @@ type VizEvent =
   | { t: 'panel'; panel: string; kind: PanelKind }     // declare a panel
   // trees
   | { t: 'node.add'; id: Id; key: number; parent: Id | null; side: 'L' | 'R' | null }
-  | { t: 'node.remove'; id: Id }
-  | { t: 'node.relink'; id: Id; parent: Id | null; side: 'L' | 'R' | null }
+  | { t: 'node.detach'; id: Id }                       // leaves its parent, keeps its subtree (floating)
+  | { t: 'node.relink'; id: Id; parent: Id | null; side: 'L' | 'R' | null }   // detach + attach
+  | { t: 'node.remove'; id: Id }                       // must have no children
   | { t: 'node.set'; id: Id; key: number }
+  // One-child delete is: detach(node) → relink(child, grandparent, side) → remove(node).
+  // Root delete is the same with parent null (relink(child, null, null) makes it root).
   // graphs (topology is fixed at load; only marks/labels change)
   | { t: 'edge.mark'; id: Id; as: 'relaxed' | 'tree' | 'rejected' | null }
   | { t: 'label'; id: Id; text: string | null }        // e.g. dist under a node
@@ -80,8 +83,18 @@ type VizEvent =
   | { t: 'return'; id: Id; value?: Scalar };
 
 type PanelKind = 'stack' | 'queue' | 'pq' | 'callstack' | 'vars';
-type PanelItem = { id: Id; label: string; key?: number; ref?: Id; meta?: Record<string, Scalar> };
+type PanelItem = { id: Id; label: string; key?: number; tie?: number; ref?: Id; meta?: Record<string, Scalar> };
+// 'pq' panels are kept sorted by (key, tie, id). Generators set `tie` to the node
+// index so equal distances pop in node order, matching the stated tie-break rule.
 ```
+
+Notes that the code enforces (src/engine/reducer.ts):
+- `pointer.at.i` may be −1 or `size` (a caret one before / one past the cells).
+- `move` into an occupied slot throws; a "lifted" element (insertion-sort key) lives in
+  a 1-slot array `hold` declared with `array`, so no extra event kind is needed.
+- The recursion **call stack is `frames`/`frameOrder`** (from `call`/`return`); there is
+  no separate `callstack` panel to push/pop. `call.args` must include the numbers the
+  recursion-tree layout needs (`lo`, `hi` for sorts).
 
 ### Step
 
