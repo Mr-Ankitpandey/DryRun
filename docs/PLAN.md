@@ -277,3 +277,16 @@ the final review, README and release.
 ## Decision log
 
 - 2026-09-25 — Plan drafted. See table in §2.
+- 2026-09-25 — Owner approved starting; git initialised with a repo-local identity
+  (Ankit Pandey), remote `origin` = github.com/Mr-Ankitpandey/DryRun, plain commit
+  messages with no AI attribution lines. Deploy target may be any free static host
+  (Cloudflare Pages, Vercel, Netlify, Render, GitHub Pages); the build is host-agnostic.
+- 2026-09-25 — WP-0 (spine) done: scaffold, tokens, rng/url/storage/theme, engine
+  (events, state, reducer, run, timeline), ask types, module interface, harness,
+  binary-search module; 45 tests incl. a 1,000-run property test; build 71 KB gz.
+- 2026-09-25 — Contract additions found while authoring binary search: pointers may
+  sit at −1/size; `node.detach` event; `PanelItem.tie` for PQ tie-breaks; frames are
+  the call stack (no callstack panel); tokens re-scope on any `[data-theme]` element.
+- 2026-09-25 — Vitest pinned to 4.1.11 (5.x needs Node 22), TypeScript to 5.9.3
+  (typescript-eslint supports < 6.1). `@eslint/js` added for the flat config.
+- 2026-09-25 — Wave 1 dispatched to four parallel agents (WP-A/B/C/D) per §8.

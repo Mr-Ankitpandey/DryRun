@@ -2,6 +2,7 @@
  *  migrations, export and import. The backend is injectable so tests run in node. */
 
 import type { MistakeKind } from '@/trace/asks';
+import { MISTAKE_LABELS } from '@/trace/asks';
 
 export const STORAGE_KEY = 'dryrun.v1';
 export const CURRENT_VERSION = 1 as const;
@@ -48,9 +49,17 @@ export interface ReviewItem {
   lastScore: number;
 }
 
+export interface StoreMeta {
+  /** First time the app recorded anything (ms epoch), null until then. */
+  firstSeen: number | null;
+  /** Most recent time the app recorded anything (ms epoch), null until then. */
+  lastSeen: number | null;
+}
+
 export interface Store {
   version: typeof CURRENT_VERSION;
   settings: Settings;
+  meta: StoreMeta;
   sessions: SessionRecord[];
   mistakes: MistakeRecord[];
   review: Record<string, ReviewItem>;
@@ -63,10 +72,38 @@ export function defaultStore(): Store {
   return {
     version: CURRENT_VERSION,
     settings: { theme: 'system', motion: 'system', level: 'guided' },
+    meta: { firstSeen: null, lastSeen: null },
     sessions: [],
     mistakes: [],
     review: {},
   };
+}
+
+/** Returns a store with `meta.firstSeen`/`lastSeen` updated for activity at `now`. */
+export function touch(store: Store, now: number): Store {
+  const firstSeen = store.meta.firstSeen === null ? now : Math.min(store.meta.firstSeen, now);
+  const lastSeen = store.meta.lastSeen === null ? now : Math.max(store.meta.lastSeen, now);
+  if (firstSeen === store.meta.firstSeen && lastSeen === store.meta.lastSeen) return store;
+  return { ...store, meta: { firstSeen, lastSeen } };
+}
+
+/** Returns a store with the review item for its algorithm replaced or added. */
+export function upsertReview(store: Store, item: ReviewItem): Store {
+  return { ...store, review: { ...store.review, [item.algorithm]: item } };
+}
+
+/** Returns a store with the session appended (replacing one with the same id), trimmed to the cap. */
+export function appendSession(store: Store, record: SessionRecord): Store {
+  const sessions = [...store.sessions.filter((s) => s.id !== record.id), record].slice(-MAX_SESSIONS);
+  return { ...store, sessions };
+}
+
+/** Returns a store with the mistakes appended (replacing any with the same ids), trimmed to the cap. */
+export function appendMistakes(store: Store, records: readonly MistakeRecord[]): Store {
+  if (records.length === 0) return store;
+  const ids = new Set(records.map((m) => m.id));
+  const mistakes = [...store.mistakes.filter((m) => !ids.has(m.id)), ...records].slice(-MAX_MISTAKES);
+  return { ...store, mistakes };
 }
 
 export interface StorageLike {
@@ -108,6 +145,11 @@ export function migrate(raw: unknown): Store | null {
     motion: motion === 'reduced' ? 'reduced' : 'system',
     level: level === 'full' ? 'full' : 'guided',
   };
+  const meta = isRecord(raw.meta) ? raw.meta : {};
+  base.meta = {
+    firstSeen: typeof meta.firstSeen === 'number' && Number.isFinite(meta.firstSeen) ? meta.firstSeen : null,
+    lastSeen: typeof meta.lastSeen === 'number' && Number.isFinite(meta.lastSeen) ? meta.lastSeen : null,
+  };
   base.sessions = Array.isArray(raw.sessions)
     ? raw.sessions.filter(isSession).slice(-MAX_SESSIONS)
     : [];
@@ -145,6 +187,7 @@ function isMistake(v: unknown): v is MistakeRecord {
     typeof v.id === 'string' &&
     typeof v.algorithm === 'string' &&
     typeof v.kind === 'string' &&
+    v.kind in MISTAKE_LABELS &&
     typeof v.rule === 'string' &&
     typeof v.seed === 'string' &&
     typeof v.input === 'string' &&
@@ -157,9 +200,9 @@ function isReviewItem(v: unknown): v is ReviewItem {
   return (
     isRecord(v) &&
     typeof v.algorithm === 'string' &&
-    typeof v.box === 'number' &&
-    v.box >= 0 &&
-    v.box <= 4 &&
+    Number.isInteger(v.box) &&
+    (v.box as number) >= 0 &&
+    (v.box as number) <= 4 &&
     typeof v.due === 'number' &&
     typeof v.reviews === 'number' &&
     typeof v.lastScore === 'number'
