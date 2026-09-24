@@ -1,18 +1,23 @@
-/** Engine spike page (owned by WP-A). Runs a module preset or a synthetic
- *  fixture through `run()`, computes the layout once, builds the scene for the
- *  current step and renders it with the bare SVG views and panels. Routes:
- *  /spike (binary search) and /spike/:id (tree | graph | grid | recursion). */
+/** Engine spike page. Runs a real algorithm module preset (or a synthetic
+ *  fixture) through `run()`, computes the layout once, builds the scene for the
+ *  current step and renders it with the bare SVG views and panels.
+ *  Routes: /spike (binary search) and /spike/:id[?p=<presetId>] where id is a
+ *  module id (binary-search | quick-sort | dijkstra | bst) or a fixture id. */
 
 import { useMemo, useReducer, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { Link, useParams } from 'wouter';
+import { Link, useParams, useSearch } from 'wouter';
 import { binarySearch } from '@/algorithms/binary-search';
-import type { Preset } from '@/algorithms/types';
+import { bst } from '@/algorithms/bst';
+import { dijkstra } from '@/algorithms/dijkstra';
+import { quickSort } from '@/algorithms/quick-sort';
+import type { AlgorithmModule } from '@/algorithms/types';
 import { computeLayout } from '@/engine/layout';
 import { run } from '@/engine/run';
 import type { Run } from '@/engine/run';
 import { buildScene } from '@/engine/scene';
 import { createTimeline, timelineReducer } from '@/engine/timeline';
+import { parseQuery } from '@/lib/url';
 import { fixtureIds, fixtures } from '@/render/fixtures';
 import { CallStackPanel } from '@/render/CallStackPanel';
 import { CodeView } from '@/render/CodeView';
@@ -29,34 +34,54 @@ import { VarsPanel } from '@/render/VarsPanel';
 const VIEW = { width: 900 };
 const BS = 'binary-search';
 
+// The spike imports modules eagerly on purpose: it is a dev page.
+const modules: Record<string, AlgorithmModule<unknown>> = {
+  [BS]: binarySearch as unknown as AlgorithmModule<unknown>,
+  'quick-sort': quickSort as unknown as AlgorithmModule<unknown>,
+  dijkstra: dijkstra as unknown as AlgorithmModule<unknown>,
+  bst: bst as unknown as AlgorithmModule<unknown>,
+};
+const moduleIds = Object.keys(modules);
+
 interface Loaded {
   id: string;
   title: string;
   pseudocode: string[];
   run: Run;
+  presets: { id: string; title: string }[];
+  presetId: string | null;
 }
 
-function load(id: string): Loaded {
+function load(id: string, presetId: string | null): Loaded {
   const fixture = fixtures[id];
-  if (fixture) return { id, title: fixture.title, pseudocode: fixture.pseudocode, run: run(fixture.initial, fixture.steps) };
-  const preset = binarySearch.presets[0] as Preset<(typeof binarySearch.presets)[number]['input']>;
-  const lines = binarySearch.pseudocode[binarySearch.variantOf(preset.input)] ?? [];
+  if (fixture) {
+    return { id, title: fixture.title, pseudocode: fixture.pseudocode, run: run(fixture.initial, fixture.steps), presets: [], presetId: null };
+  }
+  const mod = modules[id] ?? modules[BS];
+  if (!mod) throw new Error('no modules registered');
+  const preset = mod.presets.find((p) => p.id === presetId) ?? mod.presets[0];
+  if (!preset) throw new Error(`${id} has no presets`);
+  const variant = mod.variantOf(preset.input);
   return {
-    id: BS,
-    title: `${binarySearch.meta.title}: ${preset.title}`,
-    pseudocode: lines,
-    run: run(binarySearch.initialState(preset.input), binarySearch.generate(preset.input), { maxSteps: binarySearch.meta.caps.maxSteps }),
+    id,
+    title: `${mod.meta.title}: ${preset.title}`,
+    pseudocode: mod.pseudocode[variant] ?? [],
+    run: run(mod.initialState(preset.input), mod.generate(preset.input), { maxSteps: mod.meta.caps.maxSteps }),
+    presets: mod.presets.map((p) => ({ id: p.id, title: p.title })),
+    presetId: preset.id,
   };
 }
 
 export default function Spike() {
   const params = useParams<{ id?: string }>();
-  const id = params.id && fixtures[params.id] ? params.id : BS;
-  return <SpikeTrace key={id} id={id} />;
+  const search = useSearch();
+  const id = params.id && (fixtures[params.id] || modules[params.id]) ? params.id : BS;
+  const presetId = parseQuery(search).p ?? null;
+  return <SpikeTrace key={`${id}:${presetId ?? ''}`} id={id} presetId={presetId} />;
 }
 
-function SpikeTrace({ id }: { id: string }) {
-  const loaded = useMemo(() => load(id), [id]);
+function SpikeTrace({ id, presetId }: { id: string; presetId: string | null }) {
+  const loaded = useMemo(() => load(id, presetId), [id, presetId]);
   const layout = useMemo(() => computeLayout(loaded.run, VIEW), [loaded]);
   const [tl, dispatch] = useReducer(timelineReducer, loaded.run.steps.length, createTimeline);
   const [reduced, setReduced] = useState(false);
@@ -76,7 +101,7 @@ function SpikeTrace({ id }: { id: string }) {
               Engine spike
             </h1>
             <nav aria-label="fixtures" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontSize: 14 }}>
-              {[BS, ...fixtureIds].map((f) => (
+              {[...moduleIds, ...fixtureIds].map((f) => (
                 <Link key={f} href={f === BS ? '/spike' : `/spike/${f}`} data-testid={`fixture-${f}`} style={{ color: f === id ? 'var(--ink)' : 'var(--pen)', textDecoration: f === id ? 'none' : 'underline', fontWeight: f === id ? 600 : 400 }}>
                   {f}
                 </Link>
@@ -84,7 +109,27 @@ function SpikeTrace({ id }: { id: string }) {
             </nav>
           </header>
 
-          <p style={{ margin: '0 0 8px', color: 'var(--ink-2)', fontSize: 14 }}>{loaded.title}</p>
+          <p style={{ margin: '0 0 8px', color: 'var(--ink-2)', fontSize: 14, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+            <span>{loaded.title}</span>
+            {loaded.presets.length > 0 && (
+              <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                preset
+                <select
+                  data-testid="preset"
+                  value={loaded.presetId ?? ''}
+                  onChange={(e) => window.location.assign(`/spike/${id}?p=${encodeURIComponent(e.currentTarget.value)}`)}
+                  style={{ font: 'inherit', color: 'var(--ink)', background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 4, padding: '4px 6px' }}
+                >
+                  {loaded.presets.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{loaded.run.steps.length} steps</span>
+          </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 16 }} className="spike-grid">
             <section aria-label="stage" style={{ border: '1px solid var(--rule)', borderRadius: 6, background: 'var(--bg)', overflowX: 'auto', overflowY: 'hidden' }}>
@@ -124,6 +169,14 @@ function SpikeTrace({ id }: { id: string }) {
             </section>
 
             <Narration note={step ? step.note : `Start. ${nextStep ? 'Press Next to apply the first step.' : ''}`} phase={step?.phase} />
+            {nextStep?.ask && (
+              <p data-testid="ask" style={{ margin: 0, fontSize: 14, color: 'var(--ink-2)' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, marginRight: 8 }}>
+                  ask · {nextStep.ask.kind} · {nextStep.ask.level}
+                </span>
+                {nextStep.ask.prompt}
+              </p>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
               <CodeView lines={loaded.pseudocode} current={step ? step.line : 0} />

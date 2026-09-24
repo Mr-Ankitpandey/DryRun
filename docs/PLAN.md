@@ -290,3 +290,11 @@ the final review, README and release.
 - 2026-09-25 — Vitest pinned to 4.1.11 (5.x needs Node 22), TypeScript to 5.9.3
   (typescript-eslint supports < 6.1). `@eslint/js` added for the flat config.
 - 2026-09-25 — Wave 1 dispatched to four parallel agents (WP-A/B/C/D) per §8.
+- 2026-09-25 — Wave 1 accepted (A, B, C, D), 208 tests. **Milestone 1 passed**: quick
+  sort, Dijkstra (stale pops) and BST delete run through the unchanged engine and
+  renderers with no algorithm-specific branches; scrubbing is exact. Milestone 2
+  (styleguide) is live at /styleguide awaiting the owner's verdict.
+- 2026-09-25 — Known gaps carried to wave 2: Motion 13 `AnimatePresence` bug on
+  emptied HTML lists (panel rows use enter-only fades); render springs duplicate
+  `src/ui/motion.ts` (consolidate in WP-E); frame labels print args twice in the
+  spike; tree span formula in ARCHITECTURE §4 corrected by WP-A's note.
