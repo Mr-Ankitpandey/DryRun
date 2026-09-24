@@ -1,4 +1,5 @@
-/* Base styles: paper surface with the graph-paper grid, type defaults, focus rings. */
+/* Base styles: paper surface with the graph-paper grid, type defaults, focus rings,
+   selection, reduced motion. Only tokens from tokens.css are used here. */
 
 html {
   background: var(--bg);
@@ -7,10 +8,38 @@ html {
   font-size: 16px;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* Graph paper: a 20 px minor grid with a slightly stronger line every 100 px, so
+   the sheet reads as ruled paper rather than a fine mesh. Both layers use --grid;
+   the major line is simply drawn twice (1 px + the minor 1 px) so no extra token
+   is needed. */
 body {
   margin: 0;
+  min-height: 100dvh;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px),
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size:
+    100px 100px,
+    100px 100px,
+    20px 20px,
+    20px 20px;
+  background-position:
+    -1px -1px,
+    -1px -1px,
+    -1px -1px,
+    -1px -1px;
+}
+
+/* Same grid on any element that wants to be "paper" (a ThemeScope in the
+   styleguide, a stage background). Minor lines only. */
+.paper {
   background-color: var(--bg);
   background-image:
     linear-gradient(to right, var(--grid) 1px, transparent 1px),
@@ -18,7 +47,43 @@ body {
   background-size: 20px 20px;
 }
 
-:focus-visible {
+/* Surfaces sit on the grid and hide it; the grid is what separates them. */
+.surface {
+  background-color: var(--surface);
+}
+
+/* 45° hatch used by the invariant region and the Callout strip. */
+.hatch-45 {
+  background-color: var(--hatch);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--rule) 0,
+    var(--rule) 1px,
+    transparent 1px,
+    transparent 6px
+  );
+}
+
+/* Cross-hatch for eliminated ranges. */
+.hatch-x {
+  background-color: transparent;
+  background-image:
+    repeating-linear-gradient(45deg, var(--grid) 0, var(--grid) 1px, transparent 1px, transparent 6px),
+    repeating-linear-gradient(-45deg, var(--grid) 0, var(--grid) 1px, transparent 1px, transparent 6px);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--pen) 28%, transparent);
+  color: var(--ink);
+}
+
+::marker {
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible,
+[data-focus] {
   outline: 2px solid var(--pen);
   outline-offset: 2px;
 }
@@ -26,13 +91,53 @@ body {
 code,
 kbd,
 pre,
+samp,
 .font-mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  font-feature-settings: 'calt' 0;
 }
 
 .font-display {
   font-family: var(--font-display);
   letter-spacing: -0.02em;
   font-weight: 700;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+p,
+li {
+  max-width: 70ch;
+}
+
+/* Reduced motion: the tokens set --dur-* to 0 for the media query; the stored
+   setting does the same through <html data-motion="reduced">. Anything using a
+   raw CSS transition or animation is also snapped. */
+:root[data-motion='reduced'] {
+  --dur-xs: 0ms;
+  --dur-s: 0ms;
+  --dur-m: 0ms;
+  --dur-l: 0ms;
+  --dur-xl: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:root[data-motion='reduced'] *,
+:root[data-motion='reduced'] *::before,
+:root[data-motion='reduced'] *::after {
+  transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
 }

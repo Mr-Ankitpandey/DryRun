@@ -10,6 +10,9 @@
 
 @import 'tailwindcss';
 
+/* `hover:` also matches [data-hover] so the styleguide can force the state. */
+@custom-variant hover (&:hover, &[data-hover]);
+
 :root,
 [data-theme='light'] {
   --bg: #f6f7f4;
@@ -93,6 +96,16 @@
   --font-display: var(--font-display);
   --font-sans: var(--font-ui);
   --font-mono: var(--font-mono);
+
+  /* Type scale 12·14·16·20·25·31·39·49 (1.25 ratio); xs/sm/base/xl already match. */
+  --text-2xl: 1.5625rem;
+  --text-2xl--line-height: 1.15;
+  --text-3xl: 1.9375rem;
+  --text-3xl--line-height: 1.1;
+  --text-4xl: 2.4375rem;
+  --text-4xl--line-height: 1.05;
+  --text-5xl: 3.0625rem;
+  --text-5xl--line-height: 1.05;
 }
 
 @media (prefers-reduced-motion: reduce) {

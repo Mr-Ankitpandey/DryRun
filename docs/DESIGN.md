@@ -29,7 +29,7 @@ Tokens (light "paper" / dark "blackboard"):
 | token | light | dark | use |
 |---|---|---|---|
 | `--bg` | `#F6F7F4` | `#111820` | page |
-| `--grid` | `#DDE3E7` | `#1D2833` | graph-paper lines (4 px minor, 20 px major) |
+| `--grid` | `#DDE3E7` | `#1D2833` | graph-paper lines (20 px minor, stronger line every 100 px) |
 | `--surface` | `#FFFFFF` | `#182231` | panels, ask sheet |
 | `--ink` | `#13233A` | `#E6ECF2` | text, settled fills, pointers |
 | `--ink-2` | `#5A6A7B` | `#93A2B3` | secondary text, unvisited outlines |
