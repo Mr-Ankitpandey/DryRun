@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.cache/
+.scratch/
+.claude/
+*.local
+.DS_Store
+coverage/
+test-results/
+playwright-report/
+.env
+.env.*

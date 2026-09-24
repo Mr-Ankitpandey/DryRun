@@ -1,0 +1,107 @@
+/* DryRun design tokens — direction A "Graph paper" (docs/DESIGN.md §1).
+   Light theme = paper, dark theme = blackboard. Only these tokens may be used
+   for color and spacing in components; never hard-code a hex elsewhere. */
+
+@import 'tailwindcss';
+
+:root {
+  --bg: #f6f7f4;
+  --grid: #dde3e7;
+  --surface: #ffffff;
+  --ink: #13233a;
+  --ink-2: #5a6a7b;
+  --rule: #b9c5cf;
+  --pen: #1e4ed8;
+  --amber: #b76a00;
+  --teal: #0d8577;
+  --red: #cf3a3a;
+  --green: #1f8a4c;
+  --hatch: #e9eff7;
+
+  --font-display: 'Bricolage Grotesque Variable', system-ui, sans-serif;
+  --font-ui: 'Instrument Sans Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  /* motion (ms) — mirrored in src/ui/motion.ts */
+  --dur-xs: 120ms;
+  --dur-s: 180ms;
+  --dur-m: 260ms;
+  --dur-l: 380ms;
+  --dur-xl: 560ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.6, 0, 0.2, 1);
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+  }
+}
+
+/* Dark values: explicit dark theme, or system dark without an explicit light. */
+:root[data-theme='dark'] {
+  --bg: #111820;
+  --grid: #1d2833;
+  --surface: #182231;
+  --ink: #e6ecf2;
+  --ink-2: #93a2b3;
+  --rule: #31404f;
+  --pen: #7da2ff;
+  --amber: #f0a73b;
+  --teal: #3bc4b2;
+  --red: #ff6e6e;
+  --green: #4fc98a;
+  --hatch: #1f2c3c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #111820;
+    --grid: #1d2833;
+    --surface: #182231;
+    --ink: #e6ecf2;
+    --ink-2: #93a2b3;
+    --rule: #31404f;
+    --pen: #7da2ff;
+    --amber: #f0a73b;
+    --teal: #3bc4b2;
+    --red: #ff6e6e;
+    --green: #4fc98a;
+    --hatch: #1f2c3c;
+  }
+}
+
+/* Expose tokens to Tailwind utilities: bg-bg, text-ink, border-rule, font-mono … */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-grid: var(--grid);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-rule: var(--rule);
+  --color-pen: var(--pen);
+  --color-amber: var(--amber);
+  --color-teal: var(--teal);
+  --color-red: var(--red);
+  --color-green: var(--green);
+  --color-hatch: var(--hatch);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-mono);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-xs: 0ms;
+    --dur-s: 0ms;
+    --dur-m: 0ms;
+    --dur-l: 0ms;
+    --dur-xl: 0ms;
+  }
+}
