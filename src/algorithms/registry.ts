@@ -26,6 +26,30 @@ export const registry: RegistryEntry[] = [
     minutes: 3,
     load: () => import('./binary-search').then((m) => erase(m.binarySearch)),
   },
+  {
+    id: 'quick-sort',
+    title: 'Quick sort (Lomuto)',
+    family: 'sort',
+    practice: 'Where i and j go, which side each element lands on, and where the pivot settles.',
+    minutes: 6,
+    load: () => import('./quick-sort').then((m) => erase(m.quickSort)),
+  },
+  {
+    id: 'dijkstra',
+    title: 'Dijkstra (lazy deletion)',
+    family: 'graph',
+    practice: 'Which entry pops next, whether it is stale, and what the relaxed distance becomes.',
+    minutes: 5,
+    load: () => import('./dijkstra').then((m) => erase(m.dijkstra)),
+  },
+  {
+    id: 'bst',
+    title: 'BST insert, search, delete',
+    family: 'tree',
+    practice: 'Which child comes next, which delete case applies, and who the successor is.',
+    minutes: 4,
+    load: () => import('./bst').then((m) => erase(m.bst)),
+  },
 ];
 
 export function findEntry(id: string): RegistryEntry | undefined {

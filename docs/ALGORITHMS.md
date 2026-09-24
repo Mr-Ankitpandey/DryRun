@@ -103,7 +103,7 @@ array). Invariant: regions `less` `[lo, i]`, `greaterEq` `[i+1, j)`, `unscanned`
 11     swap a[i+1], a[hi]
 12     return i + 1
 ```
-Events: `call`/`return` with `push`/`pop` on the `callstack` panel; `mark pivot`;
+Events: `call`/`return` (frames are the call stack; no panel pushes); `mark pivot`;
 per `j`: `compare` then optional `swap` + region updates; final `swap` + `mark done`
 on the pivot (settled). Size 0/1 segments produce a `call` + immediate `return` (base
 case is visible, not skipped). All-equal input: every compare is false → pivot ends at

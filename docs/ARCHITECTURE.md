@@ -103,7 +103,9 @@ type Step = {
   line: number;             // pseudocode line (1-based)
   events: VizEvent[];
   note: string;             // one sentence, present tense, ≤ 90 chars
-  ask?: Ask;                // if present, this step is a checkpoint (asked BEFORE apply)
+  ask?: Ask;                // if present, this step is a checkpoint (asked BEFORE apply).
+                            // One ask per step: when two questions belong to one semantic
+                            // change (e.g. "which pops?" then "is it stale?"), split the step.
   phase?: string;           // optional grouping for timeline ticks ('partition', 'merge')
 };
 ```
