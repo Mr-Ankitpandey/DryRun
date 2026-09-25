@@ -106,9 +106,12 @@ samp,
   text-wrap: balance;
 }
 
-p,
-li {
-  max-width: 70ch;
+/* Layered so Tailwind utilities (max-w-*, max-w-none) can override it. */
+@layer base {
+  p,
+  li {
+    max-width: 70ch;
+  }
 }
 
 /* Reduced motion: the tokens set --dur-* to 0 for the media query; the stored
