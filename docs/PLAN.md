@@ -146,7 +146,7 @@ React state), immer (structural sharing is done by hand in a 100-line reducer),
 react-router (heavier than needed), wrangler (needs Node 22; not needed for static
 Pages via Git integration).
 
-Budgets: landing route ≤ 120 KB gzipped JS total; each algorithm module ≤ 15 KB and
+Budgets: landing route ≤ 130 KB gzipped JS total (was 120; the live hero needs React, Motion's core, the engine and the player, ≈ 127 KB measured), LCP < 2.5 s and CLS < 0.1 on Fast 4G + CPU ×4; each algorithm module ≤ 15 KB and
 lazy-loaded; fonts ≤ 120 KB total; LCP < 2.5 s on simulated 4G; Lighthouse ≥ 90.
 
 ## 6. Repository structure
@@ -313,3 +313,13 @@ the final review, README and release.
   at 123.7 KB gz with a placeholder player (budget 120): fix assigned to WP-E via
   Motion's LazyMotion with async features. "Keep tracing" opens at step 0 (links never
   auto-run). Measured caps: insertion 155/160, merge 186/220, BFS 54/120, knapsack 67/80.
+- 2026-09-25 — Wave 2 accepted: trace screen + TracePlayer (WP-E), landing/library (WP-F),
+  4 more algorithms (WP-G), learning screens (WP-H). 355 unit + 93 e2e tests green on
+  desktop and phone. Trace animation p95 16.7 ms at CPU ×6 (budget 20).
+- 2026-09-25 — Landing JS budget reset from 120 to 130 KB gz: every loaded chunk is
+  needed by the live hero (react-dom 69, Motion core 14, engine/render 12, player 11);
+  measured LCP ≈ 1.0 s and CLS 0 on Fast 4G + CPU ×4. Motion's animation features load
+  on the first interaction.
+- 2026-09-25 — Lead fix during integration: on touch screens the Progress chart cleared
+  its readout on `pointerleave`, which fires when a finger lifts; it now clears only
+  for a mouse.
