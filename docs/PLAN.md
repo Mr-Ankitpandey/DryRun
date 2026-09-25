@@ -308,3 +308,8 @@ the final review, README and release.
   providers directly, not the '@/ui' barrel (kept the main chunk at 73 KB gz).
 - 2026-09-25 — Wave 2 dispatched (WP-E trace, WP-F landing/library, WP-G algorithms
   batch 2, WP-H learning screens) against a frozen `TracePlayer` props contract.
+- 2026-09-25 — WP-F (landing, library, 404, nav) and WP-G (insertion sort, merge sort,
+  BFS, knapsack) accepted; all 8 MVP algorithms are registered. Landing JS measured
+  at 123.7 KB gz with a placeholder player (budget 120): fix assigned to WP-E via
+  Motion's LazyMotion with async features. "Keep tracing" opens at step 0 (links never
+  auto-run). Measured caps: insertion 155/160, merge 186/220, BFS 54/120, knapsack 67/80.

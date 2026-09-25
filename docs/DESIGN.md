@@ -275,7 +275,8 @@ all components, both themes side by side.
    tiny) and mounts `Stage` with preset `basic`, target 42, level guided, `k` at the
    first ask. No signup, no modal. The first click grades, reveals with the ghost,
    and shows the rule. A second ask follows; after two, the button "Keep tracing"
-   deep-links into `/t/binary-search` at the same step.
+   deep-links into `/t/binary-search` with the same input and seed; it opens at step 0
+   because shared links never auto-run (ARCHITECTURE §10).
 2. **Ghost.** On a wrong `pick`, the trace layer injects a `Ghost` primitive at the
    learner's slot/node with the dashed red-pencil outline; the real move plays in pen
    blue at the same time; the rule sentence replaces the prompt in the sheet. Ghost

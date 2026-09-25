@@ -95,6 +95,15 @@ Notes that the code enforces (src/engine/reducer.ts):
 - The recursion **call stack is `frames`/`frameOrder`** (from `call`/`return`); there is
   no separate `callstack` panel to push/pop. `call.args` must include the numbers the
   recursion-tree layout needs (`lo`, `hi` for sorts).
+- Transient `compare`/`read` refs given as Slots are resolved against the state
+  after the step. When the element moves in the same step, use `{ id }` refs.
+- The grid draws dependency arrows for the cell marked `active`; DP generators mark
+  the newly written cell active and clear the previous one.
+- An ask whose answer is an empty slot ("where does the key land?") is a `choice`
+  over "slot k" labels. A later `ids.slot(arr, i)` with clickable empty slots would
+  let it become a `pick`; not needed for the MVP.
+- `order` asks: the UI shows the pool in a neutral order (by label/id), never in
+  `ask.pool` order, because a module may supply the pool in answer order.
 
 ### Step
 
