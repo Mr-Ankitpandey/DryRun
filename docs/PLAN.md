@@ -298,3 +298,13 @@ the final review, README and release.
   emptied HTML lists (panel rows use enter-only fades); render springs duplicate
   `src/ui/motion.ts` (consolidate in WP-E); frame labels print args twice in the
   spike; tree span formula in ARCHITECTURE §4 corrected by WP-A's note.
+- 2026-09-25 — Owner verdict on the styleguide: keep the direction; motion must be
+  felt but stay light on low/mid-range phones, and avoid AI-design tells. Recorded
+  as DESIGN §3a (signature motions + a measured budget: transform/opacity/dash only,
+  ≤ 16 concurrent, p95 ≤ 20 ms at CPU ×6). The avoid-ai-design scanner is part of
+  every UI package's acceptance.
+- 2026-09-25 — StoreProvider is the only writer of persisted data (ThemeProvider was
+  saving a snapshot that could overwrite a just-committed session). App root imports
+  providers directly, not the '@/ui' barrel (kept the main chunk at 73 KB gz).
+- 2026-09-25 — Wave 2 dispatched (WP-E trace, WP-F landing/library, WP-G algorithms
+  batch 2, WP-H learning screens) against a frozen `TracePlayer` props contract.
