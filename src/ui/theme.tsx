@@ -1,12 +1,14 @@
-/** Theme + motion preference context. Persists through src/lib/storage and
- *  applies through src/lib/theme. `ThemeScope` re-scopes tokens for a subtree
- *  (used by the styleguide to show both themes side by side). */
+/** Theme + motion preference context. Reads and writes settings through the
+ *  StoreProvider (the only writer of persisted data) and applies them through
+ *  src/lib/theme. Outside a StoreProvider it keeps settings in memory only.
+ *  `ThemeScope` re-scopes tokens for a subtree (styleguide side-by-side view). */
 
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { createStorage, defaultStore } from '@/lib/storage';
-import type { MotionPref, Storage, Store, Theme } from '@/lib/storage';
+import { defaultStore } from '@/lib/storage';
+import type { MotionPref, Store, Theme } from '@/lib/storage';
 import { applyTheme } from '@/lib/theme';
+import { StoreContext } from './store';
 
 export interface ThemeContextValue {
   theme: Theme;
@@ -29,27 +31,15 @@ function applyMotion(motion: MotionPref, root: HTMLElement = document.documentEl
   else delete root.dataset.motion;
 }
 
-function browserStorage(): Storage | null {
-  try {
-    if (typeof window === 'undefined') return null;
-    return createStorage(window.localStorage);
-  } catch {
-    return null;
-  }
-}
-
 export interface ThemeProviderProps {
   children: ReactNode;
-  /** Injectable for tests; defaults to localStorage. */
-  storage?: Storage | null;
 }
 
-export function ThemeProvider({ children, storage: injected }: ThemeProviderProps) {
-  const [storage] = useState<Storage | null>(() => injected ?? browserStorage());
-
-  const [settings, setSettings] = useState<Store['settings']>(() =>
-    storage ? storage.load().store.settings : defaultStore().settings,
-  );
+export function ThemeProvider({ children }: ThemeProviderProps) {
+  const storeCtx = useContext(StoreContext);
+  const [local, setLocal] = useState<Store['settings']>(() => defaultStore().settings);
+  const settings = storeCtx ? storeCtx.store.settings : local;
+  const update = storeCtx?.update;
 
   // Apply before paint; index.html already set the theme attribute pre-hydration.
   useLayoutEffect(() => {
@@ -57,16 +47,15 @@ export function ThemeProvider({ children, storage: injected }: ThemeProviderProp
     applyMotion(settings.motion);
   }, [settings.theme, settings.motion]);
 
-  // Persist only when the stored value differs (no write on mount).
-  useEffect(() => {
-    if (!storage) return;
-    const { store } = storage.load();
-    if (store.settings.theme === settings.theme && store.settings.motion === settings.motion) return;
-    storage.save({ ...store, settings: { ...store.settings, theme: settings.theme, motion: settings.motion } });
-  }, [settings.theme, settings.motion, storage]);
-
-  const setTheme = useCallback((theme: Theme) => setSettings((prev) => ({ ...prev, theme })), []);
-  const setMotion = useCallback((motion: MotionPref) => setSettings((prev) => ({ ...prev, motion })), []);
+  const setSettings = useCallback(
+    (patch: Partial<Store['settings']>) => {
+      if (update) update((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
+      else setLocal((prev) => ({ ...prev, ...patch }));
+    },
+    [update],
+  );
+  const setTheme = useCallback((theme: Theme) => setSettings({ theme }), [setSettings]);
+  const setMotion = useCallback((motion: MotionPref) => setSettings({ motion }), [setSettings]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({ theme: settings.theme, setTheme, motion: settings.motion, setMotion }),

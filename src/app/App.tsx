@@ -1,36 +1,47 @@
 import { Suspense, lazy } from 'react';
 import { Route, Switch } from 'wouter';
+// Direct imports, not the '@/ui' barrel: the root must not pull every component
+// (and Motion) into the landing bundle.
+import { StoreProvider } from '@/ui/store';
+import { ThemeProvider } from '@/ui/theme';
 
-/** Route shell. Screens are added by their packages (docs/PLAN.md §8);
- *  this file is lead-owned. Every screen is lazy so the landing stays small. */
+/** Route table (lead-owned). Each screen file is owned by one package
+ *  (docs/PLAN.md §8). Every screen is lazy so the landing stays small. */
+const Landing = lazy(() => import('./Landing'));
+const Library = lazy(() => import('./Library'));
+const Trace = lazy(() => import('./Trace'));
+const Review = lazy(() => import('./Review'));
+const Mistakes = lazy(() => import('./Mistakes'));
+const Progress = lazy(() => import('./Progress'));
+const Settings = lazy(() => import('./Settings'));
+const NotFound = lazy(() => import('./NotFound'));
 const Spike = lazy(() => import('./Spike'));
 const Styleguide = lazy(() => import('./Styleguide'));
 
 function Fallback() {
-  return <main className="min-h-dvh bg-bg text-ink px-4 py-10 text-ink-2">Loading…</main>;
+  return <div className="min-h-dvh" aria-busy="true" />;
 }
 
 export default function App() {
   return (
-    <Suspense fallback={<Fallback />}>
-      <Switch>
-        <Route path="/">
-          <main className="min-h-dvh bg-bg text-ink px-4 py-10">
-            <h1 className="font-display text-3xl">DryRun</h1>
-            <p className="mt-2 max-w-prose text-ink-2">Stop watching algorithms. Start tracing them.</p>
-            <p className="mt-6 font-mono text-sm">engine spike in progress</p>
-          </main>
-        </Route>
-        <Route path="/spike" component={Spike} />
-        <Route path="/spike/:id" component={Spike} />
-        <Route path="/styleguide" component={Styleguide} />
-        <Route>
-          <main className="min-h-dvh bg-bg text-ink px-4 py-10">
-            <h1 className="font-display text-3xl">Nothing here</h1>
-            <p className="mt-2 text-ink-2">This page does not exist. Go back to the start.</p>
-          </main>
-        </Route>
-      </Switch>
-    </Suspense>
+    <StoreProvider>
+      <ThemeProvider>
+        <Suspense fallback={<Fallback />}>
+          <Switch>
+            <Route path="/" component={Landing} />
+            <Route path="/algorithms" component={Library} />
+            <Route path="/t/:id" component={Trace} />
+            <Route path="/review" component={Review} />
+            <Route path="/mistakes" component={Mistakes} />
+            <Route path="/progress" component={Progress} />
+            <Route path="/settings" component={Settings} />
+            <Route path="/spike" component={Spike} />
+            <Route path="/spike/:id" component={Spike} />
+            <Route path="/styleguide" component={Styleguide} />
+            <Route component={NotFound} />
+          </Switch>
+        </Suspense>
+      </ThemeProvider>
+    </StoreProvider>
   );
 }

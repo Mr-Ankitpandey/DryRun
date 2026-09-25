@@ -37,6 +37,8 @@ export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
 export { Switch } from './Switch';
 export type { SwitchProps } from './Switch';
+export { StoreProvider, useStore } from './store';
+export type { StoreContextValue, StoreProviderProps } from './store';
 export { ThemeProvider, ThemeScope, useTheme } from './theme';
 export type { ThemeContextValue, ThemeScopeProps } from './theme';
 export { durations, easings, easingCss, springs, transitionFor, useMotionPref, useTransition, useSystemReducedMotion } from './motion';

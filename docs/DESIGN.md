@@ -175,6 +175,51 @@ ghost still appear (instantly). Never animate `width`/`height` of layout element
 Non-user-triggered motion: exactly one, the landing hero's first move plays once.
 No section fade-ins, no hover lifts on cards.
 
+### 3a. Motion that people feel, on cheap phones (owner direction, 2026-09-25)
+
+The owner wants motion users *feel*, light enough for low and mid-range Android.
+Feel comes from physical, answering motion on the one thing that changed, not from
+decoration. The signature motions, all built from transform, opacity and stroke
+dash properties only:
+
+1. **Pick up and place.** A moving element lifts slightly (y −10 units mid-flight,
+   keyframes `[0, −10, 0]`) while x follows the `move` spring, so it reads as a
+   pen-moved object. In a swap the two elements arc in opposite directions (one over,
+   one under) so they never overlap. Insertion-sort shifts slide flat (no lift):
+   shift and swap must *look* different, because that difference is the lesson.
+2. **Press to commit.** An answer target scales to 0.96 on press and releases on the
+   `sheet` spring. The finger gets a response before the answer is graded.
+3. **Correct.** The green ring draws itself (pathLength 0→1, 260 ms) and the element
+   settles once (scale 1.04 → 1). No confetti, no sound.
+4. **Ghost.** The learner's wrong guess sketches in as a dashed red outline
+   (stroke-dashoffset, 240 ms) at the guessed position, then the real move plays in
+   pen blue. The ghost stays at 40 % until the next ask.
+5. **Ruler.** Invariant regions grow and shrink from their anchor edge like a ruler
+   being drawn (`out` easing, 380 ms).
+6. **Carets** settle on the `settle` spring along x only.
+7. **Ask sheet** rises on the `sheet` spring; the prompt text swaps with a 120 ms
+   crossfade.
+8. **Scrubbing** is zero-duration; ticks already passed fill in as the cursor moves.
+9. **Landing hero** is the only non-user-triggered moment: the array writes itself
+   onto the grid cell by cell once on load (stagger 30 ms, opacity + y 6), then waits
+   for the click.
+10. **Pages** switch instantly. No fade-up on scroll, no parallax, no hover lifts.
+
+Performance budget (acceptance criteria, not wishes):
+- Animate only `transform`, `opacity`, `stroke-dashoffset` / `pathLength`. Never
+  animate `filter`, blur, `box-shadow`, `backdrop-filter`, width/height/top/left,
+  or SVG geometry attributes; position with transforms on `<g>`.
+- At most 16 elements animating at once (one semantic change per step keeps a
+  typical step at 1–6).
+- No infinite animations. The "your turn" pulse on a pending ask runs 2 cycles max.
+- Motion's reduced-bundle path (`LazyMotion` + `m` components + `domAnimation`) in
+  app and render code, verified against the Motion docs.
+- Reduced motion (system or the stored setting) makes every transition instant; all
+  information stays visible.
+- Measured with Playwright on a 390 px viewport under Chrome CPU throttling ×6: p95
+  frame time ≤ 20 ms across 10 consecutive step transitions. A miss blocks
+  acceptance.
+
 ## 4. Component inventory (`src/ui`, `src/render`)
 
 UI: `AppShell`, `TopBar`, `Button` (primary/quiet/danger, 44 px tap targets), `IconButton`,
