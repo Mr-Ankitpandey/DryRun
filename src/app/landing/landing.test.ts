@@ -43,8 +43,8 @@ describe('welcomeFor', () => {
   });
 
   it('keeps unknown ids visible rather than dropping them', () => {
-    const w = welcomeFor({ knapsack: item('knapsack', NOW) }, NOW, registry);
-    expect(w?.titles).toEqual(['knapsack']);
+    const w = welcomeFor({ 'no-such-algorithm': item('no-such-algorithm', NOW) }, NOW, registry);
+    expect(w?.titles).toEqual(['no-such-algorithm']);
     expect(w?.line).toBe('Welcome back — 1 re-trace due, ~3 minutes.');
   });
 });

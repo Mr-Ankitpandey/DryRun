@@ -31,6 +31,11 @@ const variants: Record<ButtonVariant, string> = {
     'border-red bg-surface text-red hover:bg-red hover:text-bg data-hover:bg-red data-hover:text-bg',
 };
 
+/** Class string for anything that must look like a Button (e.g. LinkButton). */
+export function buttonClass(variant: ButtonVariant = 'quiet', size: 'md' | 'sm' = 'md'): string {
+  return cx(base, sizes[size], variants[variant]);
+}
+
 /** The one button. Primary is pen blue (one per screen), quiet is the default,
  *  danger is outlined red until hovered. */
 export function Button({
@@ -43,7 +48,7 @@ export function Button({
   ...rest
 }: ButtonProps) {
   return (
-    <button type={type} className={cx(base, sizes[size], variants[variant], className)} {...rest}>
+    <button type={type} className={cx(buttonClass(variant, size), className)} {...rest}>
       {icon ? (
         <span aria-hidden="true" className="-ml-1 inline-flex size-4 shrink-0 items-center justify-center">
           {icon}
