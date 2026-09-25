@@ -1,22 +1,24 @@
 /** Distance table for graphs: one row per node with its current label text
- *  (∞ when none) and mark. Rows link to the graph node on hover. */
+ *  (∞ when none) and mark. Rows link to the graph node on hover. Settled rows
+ *  are bold with a drawn tick (not colour alone). */
 
 import type { Scene } from '@/engine/scene';
 import { primsOf } from '@/engine/scene';
 import { useHoverHandlers, useLinked } from './HoverProvider';
+import { TICK_PATH } from './marks';
 
-export function DistTable({ scene, title = 'dist' }: { scene: Scene; title?: string }) {
+export function DistTable({ scene, title = 'Distance' }: { scene: Scene; title?: string }) {
   const nodes = primsOf(scene, 'gnode');
   if (nodes.length === 0) return null;
   return (
-    <section data-testid="dist-table" style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>
-      <h3 style={{ fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{title}</h3>
-      <table style={{ borderCollapse: 'collapse', width: '100%', border: '1px solid var(--rule)', borderRadius: 4, background: 'var(--surface)' }}>
+    <section data-testid="dist-table" className="min-w-0 font-mono text-sm">
+      <h3 className="mb-1 font-sans text-sm font-medium text-ink-2">{title}</h3>
+      <table className="w-full border-collapse overflow-hidden rounded-sm border border-rule bg-surface">
         <thead>
-          <tr style={{ color: 'var(--ink-2)', fontFamily: 'var(--font-ui)', fontSize: 11 }}>
-            <th style={{ textAlign: 'left', padding: '2px 8px', fontWeight: 500 }}>node</th>
-            <th style={{ textAlign: 'right', padding: '2px 8px', fontWeight: 500 }}>{title}</th>
-            <th style={{ textAlign: 'left', padding: '2px 8px', fontWeight: 500 }}>state</th>
+          <tr className="font-sans text-xs text-ink-2">
+            <th className="px-2 py-0.5 text-left font-medium">node</th>
+            <th className="px-2 py-0.5 text-right font-medium">dist</th>
+            <th className="px-2 py-0.5 text-left font-medium">state</th>
           </tr>
         </thead>
         <tbody>
@@ -33,12 +35,18 @@ function DistRow({ id, label, text, mark }: { id: string; label: string; text: s
   const linked = useLinked(id);
   const handlers = useHoverHandlers(id);
   return (
-    <tr data-id={id} data-linked={linked ? 'true' : undefined} {...handlers} style={{ borderTop: '1px solid var(--grid)', background: linked ? 'color-mix(in srgb, var(--pen) 12%, transparent)' : 'transparent' }}>
-      <td style={{ padding: '2px 8px' }}>{label}</td>
-      <td style={{ padding: '2px 8px', textAlign: 'right', fontWeight: mark === 'settled' ? 700 : 400 }}>{text ?? '∞'}</td>
-      <td style={{ padding: '2px 8px', color: 'var(--ink-2)', fontFamily: 'var(--font-ui)', fontSize: 11 }}>
-        {mark ?? ''}
-        {mark === 'settled' ? ' ✓' : ''}
+    <tr data-id={id} data-linked={linked ? 'true' : undefined} {...handlers} className={`border-t border-grid ${linked ? 'bg-hatch' : ''}`}>
+      <td className="px-2 py-0.5">{label}</td>
+      <td className={`px-2 py-0.5 text-right ${mark === 'settled' ? 'font-bold' : ''}`}>{text ?? '∞'}</td>
+      <td className="px-2 py-0.5 font-sans text-xs text-ink-2">
+        <span className="inline-flex items-center gap-1">
+          {mark ?? ''}
+          {mark === 'settled' && (
+            <svg aria-hidden="true" viewBox="-1 -1 12 10" className="h-2.5 w-3">
+              <path d={TICK_PATH} fill="none" stroke="currentColor" strokeWidth={1.5} />
+            </svg>
+          )}
+        </span>
       </td>
     </tr>
   );

@@ -1,11 +1,13 @@
 /** A DP grid cell: empty until computed; the fresh cell (being computed now)
  *  gets a pen ring and tint, read cells a dotted outline, done a tick. */
 
+import { memo } from 'react';
 import type { CellPrim } from '@/engine/scene';
 import { LINKED_STROKE, TICK_PATH, markStyle } from './marks';
+import { sameProps } from './memo';
 import { PrimGroup } from './PrimGroup';
 
-export function Cell({ p }: { p: CellPrim }) {
+export const Cell = memo(function Cell({ p }: { p: CellPrim }) {
   const s = markStyle(p.mark);
   const empty = p.value === null;
   return (
@@ -24,4 +26,4 @@ export function Cell({ p }: { p: CellPrim }) {
       )}
     </PrimGroup>
   );
-}
+}, sameProps);

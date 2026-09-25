@@ -2,17 +2,22 @@
  *  mono. Cues: mark styles (marks.ts), amber stroke while compared, dotted
  *  outline while read, 50 % opacity inside an eliminated region. */
 
+import { memo } from 'react';
 import type { BarPrim } from '@/engine/scene';
-import { LINKED_STROKE, PATTERN, TICK_PATH, markStyle } from './marks';
+import { LINKED_STROKE, TICK_PATH, markStyle } from './marks';
+import { sameProps } from './memo';
+import { usePatterns } from './patterns';
+import type { Lift } from './motion-hints';
 import { PrimGroup } from './PrimGroup';
 
-export function Bar({ p, dim = false }: { p: BarPrim; dim?: boolean }) {
+export const Bar = memo(function Bar({ p, dim = false, lift }: { p: BarPrim; dim?: boolean; lift?: Lift | undefined }) {
+  const PATTERN = usePatterns();
   const s = markStyle(p.mark);
   const stroke = p.compared ? 'var(--amber)' : s.stroke;
   const strokeWidth = p.compared ? 2 : s.strokeWidth;
   const inner = p.w - 4;
   return (
-    <PrimGroup id={p.id} x={p.x} y={p.y} opacity={dim ? 0.5 : 1} kind="move">
+    <PrimGroup id={p.id} x={p.x} y={p.y} opacity={dim ? 0.5 : 1} kind="move" lift={lift}>
       {(linked) => (
         <>
           <rect x={2} width={inner} height={p.h} rx={2} fill={s.fill} fillOpacity={s.fillOpacity} stroke={linked ? LINKED_STROKE : stroke} strokeWidth={linked ? 2.5 : strokeWidth} strokeDasharray={s.dash} />
@@ -31,4 +36,4 @@ export function Bar({ p, dim = false }: { p: BarPrim; dim?: boolean }) {
       )}
     </PrimGroup>
   );
-}
+}, sameProps);

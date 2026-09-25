@@ -2,12 +2,16 @@
  *  distance). Frontier = dashed teal ring, visited = dotted fill, settled =
  *  solid ink + tick; a skipped node shows a small "stale" tag. */
 
+import { memo } from 'react';
 import type { GNodePrim } from '@/engine/scene';
 import { GRAPH_NODE_R } from '@/engine/layout/graph';
-import { LINKED_STROKE, PATTERN, TICK_PATH, markStyle } from './marks';
+import { LINKED_STROKE, TICK_PATH, markStyle } from './marks';
+import { sameProps } from './memo';
+import { usePatterns } from './patterns';
 import { PrimGroup } from './PrimGroup';
 
-export function GNode({ p }: { p: GNodePrim }) {
+export const GNode = memo(function GNode({ p }: { p: GNodePrim }) {
+  const PATTERN = usePatterns();
   const s = markStyle(p.mark);
   const r = GRAPH_NODE_R;
   const stroke = p.compared ? 'var(--amber)' : s.stroke;
@@ -34,4 +38,4 @@ export function GNode({ p }: { p: GNodePrim }) {
       )}
     </PrimGroup>
   );
-}
+}, sameProps);

@@ -1,7 +1,8 @@
-/** BST: edges (keyed by child) under nodes. Both enter/exit through
- *  AnimatePresence; a relinked node's <g> is reused and travels. */
+/** BST: edges (keyed by child) under nodes. A relinked node's <g> is reused
+ *  and travels. Entering nodes fade in; a removed node leaves at once (no
+ *  AnimatePresence: an exit still running when stepping back re-adds the same
+ *  key is how Motion 13 strands elements at opacity 0). */
 
-import { AnimatePresence } from 'motion/react';
 import type { Scene } from '@/engine/scene';
 import { primsOf } from '@/engine/scene';
 import { Edge } from './Edge';
@@ -13,16 +14,12 @@ export function TreeView({ scene }: { scene: Scene }) {
   const edges = primsOf(scene, 'tedge');
   return (
     <g data-view="tree">
-      <AnimatePresence initial={false}>
-        {edges.map((e) => (
-          <Edge key={e.id} p={e} />
-        ))}
-      </AnimatePresence>
-      <AnimatePresence initial={false}>
-        {nodes.map((n) => (
-          <TNode key={n.id} p={n} />
-        ))}
-      </AnimatePresence>
+      {edges.map((e) => (
+        <Edge key={e.id} p={e} />
+      ))}
+      {nodes.map((n) => (
+        <TNode key={n.id} p={n} />
+      ))}
     </g>
   );
 }

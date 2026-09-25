@@ -1,25 +1,73 @@
-/** Motion transitions for the renderer, mirroring docs/DESIGN.md §3. Kept here
- *  so src/render does not depend on src/ui (WP-B); once src/ui/motion.ts lands
- *  these constants should be imported from there instead. */
+/** Renderer transitions, built only from the motion tokens in src/ui/motion.ts
+ *  (docs/DESIGN.md §3, §3a). No duration or spring constant is defined here.
+ *
+ *  Playback speed (0.5×–2×) scales every transition: tweens divide their
+ *  duration; springs scale stiffness by speed² and damping by speed, which
+ *  keeps the damping ratio (so `move` still never overshoots) and makes the
+ *  motion exactly `speed` times faster. */
 
 import type { Transition } from 'motion/react';
+import { durations, easings, instant, springs as uiSprings } from '@/ui/motion';
 
-export const springs = {
-  /** Element travel: no overshoot. */
-  move: { type: 'spring', stiffness: 520, damping: 42, mass: 1 } as const satisfies Transition,
-  /** Pointers and carets. */
-  settle: { type: 'spring', stiffness: 400, damping: 34 } as const satisfies Transition,
-  /** Ask sheet, tick confirmation (slight overshoot). */
-  sheet: { type: 'spring', stiffness: 300, damping: 26 } as const satisfies Transition,
-  /** Opacity on enter/exit (DESIGN `s` = 180 ms). */
-  fade: { duration: 0.18, ease: [0.2, 0.7, 0.2, 1] } as const satisfies Transition,
-  /** Region x/width: an out-easing tween (DESIGN `m` = 260 ms), never a
-   *  spring, because a spring could undershoot a width below zero. */
-  region: { duration: 0.26, ease: [0.2, 0.7, 0.2, 1] } as const satisfies Transition,
-  /** Colour changes of marks (DESIGN `xs` = 120 ms). */
-  mark: { duration: 0.12 } as const satisfies Transition,
-};
+export { instant };
 
-export type SpringKind = keyof typeof springs;
+export type RenderMotion =
+  /** Element travel (bars, nodes): the `move` spring, no overshoot. */
+  | 'move'
+  /** Carets and frames: the `settle` spring. */
+  | 'settle'
+  /** Press-to-commit release and the correct settle: the `sheet` spring. */
+  | 'sheet'
+  /** Opacity on enter (s). */
+  | 'fade'
+  /** Mark colour changes (xs). */
+  | 'mark'
+  /** Region ruler: grows from its anchor edge (l, `out` easing). */
+  | 'ruler'
+  /** The lift arc of a picked-up element; as long as the move spring settles (m). */
+  | 'lift'
+  /** The correct ring drawing itself (m). */
+  | 'draw'
+  /** The ghost sketching in (m). */
+  | 'sketch'
+  /** The "your turn" breathing of pick targets: two cycles of l each way, then rest. */
+  | 'pulse';
 
-export const instant: Transition = { duration: 0 };
+function scaledSpring(kind: keyof typeof uiSprings, speed: number): Transition {
+  const s = uiSprings[kind];
+  return { type: 'spring', stiffness: s.stiffness * speed * speed, damping: s.damping * speed, mass: s.mass };
+}
+
+function tween(ms: number, speed: number, ease: readonly number[] = easings.out): Transition {
+  return { type: 'tween', duration: ms / 1000 / speed, ease: [...ease] as [number, number, number, number] };
+}
+
+/** The transition for one kind of change at a playback speed. */
+export function renderTransition(kind: RenderMotion, speed = 1): Transition {
+  const sp = speed > 0 ? speed : 1;
+  switch (kind) {
+    case 'move':
+      return scaledSpring('move', sp);
+    case 'settle':
+      return scaledSpring('settle', sp);
+    case 'sheet':
+      return scaledSpring('sheet', sp);
+    case 'fade':
+      return tween(durations.s, sp);
+    case 'mark':
+      return tween(durations.xs, sp);
+    case 'ruler':
+      return tween(durations.l, sp);
+    case 'lift':
+      return { ...tween(durations.m, sp, easings.inOut), times: [0, 0.5, 1] };
+    case 'draw':
+      return tween(durations.m, sp);
+    case 'sketch':
+      return tween(durations.m, sp);
+    case 'pulse':
+      return tween(durations.l * 4, 1, easings.inOut);
+  }
+}
+
+/** Kept for callers of the WP-A API: the renderer's named transitions at 1×. */
+export type SpringKind = RenderMotion;

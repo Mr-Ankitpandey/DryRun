@@ -6,6 +6,9 @@ import type { Scene } from '@/engine/scene';
 import { primsOf } from '@/engine/scene';
 import { Cell } from './Cell';
 
+/** Font size of the row and column labels (scene units). */
+export const GRID_LABEL_FONT = 10;
+
 export function GridView({ scene, layout }: { scene: Scene; layout: Layout }) {
   const gl = layout.grid;
   if (!gl) return null;
@@ -14,12 +17,12 @@ export function GridView({ scene, layout }: { scene: Scene; layout: Layout }) {
   return (
     <g data-view="grid">
       {gl.colLabels.map((label, c) => (
-        <text key={`c${c}`} x={gl.x0 + c * gl.cellW + gl.cellW / 2} y={gl.y0 - 8} textAnchor="middle" fontSize={10} fill="var(--ink-2)">
+        <text key={`c${c}`} x={gl.x0 + c * gl.cellW + gl.cellW / 2} y={gl.y0 - 8} textAnchor="middle" fontSize={GRID_LABEL_FONT} fill="var(--ink-2)">
           {label}
         </text>
       ))}
       {gl.rowLabels.map((label, r) => (
-        <text key={`r${r}`} x={gl.x0 - 8} y={gl.y0 + r * gl.cellH + gl.cellH / 2 + 4} textAnchor="end" fontSize={10} fill="var(--ink-2)">
+        <text key={`r${r}`} x={gl.x0 - 8} y={gl.y0 + r * gl.cellH + gl.cellH / 2 + 4} textAnchor="end" fontSize={GRID_LABEL_FONT} fill="var(--ink-2)">
           {label}
         </text>
       ))}

@@ -1,17 +1,19 @@
 /** Arrays: static slot outlines and index labels from the layout, then the
  *  regions (behind), bars and carets from the scene. Bars inside a visible
- *  'eliminated' region render at 50 % opacity. */
+ *  'eliminated' region render at 50 % opacity. Elements never leave an array
+ *  view, so there is no exit animation (and no AnimatePresence). */
 
-import { AnimatePresence } from 'motion/react';
 import type { Layout } from '@/engine/layout';
 import { slotCenter } from '@/engine/layout';
 import type { Scene } from '@/engine/scene';
 import { primsOf } from '@/engine/scene';
 import { Bar } from './Bar';
 import { Caret } from './Caret';
+import { useMoveHints } from './MotionMode';
 import { Region } from './Region';
 
 export function ArrayView({ scene, layout }: { scene: Scene; layout: Layout }) {
+  const hints = useMoveHints();
   const al = layout.array;
   if (!al) return null;
   const regions = primsOf(scene, 'region');
@@ -52,16 +54,12 @@ export function ArrayView({ scene, layout }: { scene: Scene; layout: Layout }) {
       {regions.map((r) => (
         <Region key={r.id} p={r} />
       ))}
-      <AnimatePresence initial={false}>
-        {bars.map((b) => (
-          <Bar key={b.id} p={b} dim={dim(b.arr, b.x)} />
-        ))}
-      </AnimatePresence>
-      <AnimatePresence initial={false}>
-        {carets.map((c, i) => (
-          <Caret key={c.id} p={c} stack={stacks[i] ?? 0} />
-        ))}
-      </AnimatePresence>
+      {bars.map((b) => (
+        <Bar key={b.id} p={b} dim={dim(b.arr, b.x)} lift={hints.get(b.id)} />
+      ))}
+      {carets.map((c, i) => (
+        <Caret key={c.id} p={c} stack={stacks[i] ?? 0} />
+      ))}
     </g>
   );
 }

@@ -1,9 +1,10 @@
-/** The step's one-sentence note, announced politely to screen readers. */
+/** The step's one-sentence note, announced politely to screen readers. The
+ *  phase, when the step has one, is a quiet lead-in in the same sentence case. */
 
-export function Narration({ note, phase }: { note: string; phase?: string | undefined }) {
+export function Narration({ note, phase, className = '' }: { note: string; phase?: string | undefined; className?: string }) {
   return (
-    <p data-testid="narration" aria-live="polite" aria-atomic="true" style={{ margin: 0, fontFamily: 'var(--font-ui)', fontSize: 15, lineHeight: 1.5, minHeight: '3em' }}>
-      {phase && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-2)', marginRight: 8, textTransform: 'uppercase' }}>{phase}</span>}
+    <p data-testid="narration" aria-live="polite" aria-atomic="true" className={`m-0 min-h-[3em] text-base leading-normal text-ink ${className}`}>
+      {phase && <span className="mr-2 text-sm text-ink-2">{phase}:</span>}
       {note}
     </p>
   );

@@ -1,11 +1,13 @@
 /** A pointer: triangle caret below the cell with its name in mono (pen). */
 
+import { memo } from 'react';
 import type { CaretPrim } from '@/engine/scene';
 import { LINKED_STROKE } from './marks';
+import { sameProps } from './memo';
 import { PrimGroup } from './PrimGroup';
 
 /** `stack` offsets the label when several carets share a slot (i = j = lo). */
-export function Caret({ p, stack = 0 }: { p: CaretPrim; stack?: number }) {
+export const Caret = memo(function Caret({ p, stack = 0 }: { p: CaretPrim; stack?: number }) {
   return (
     <PrimGroup id={p.id} x={p.x} y={p.y} opacity={p.visible ? 1 : 0} kind="settle">
       {(linked) => (
@@ -18,4 +20,4 @@ export function Caret({ p, stack = 0 }: { p: CaretPrim; stack?: number }) {
       )}
     </PrimGroup>
   );
-}
+}, sameProps);

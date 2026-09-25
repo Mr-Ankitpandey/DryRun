@@ -2,12 +2,16 @@
  *  ink-2 ring; marks follow marks.ts; amber stroke while compared, dotted
  *  outline while read. */
 
+import { memo } from 'react';
 import type { TNodePrim } from '@/engine/scene';
 import { TREE_NODE_R } from '@/engine/layout/tree';
-import { LINKED_STROKE, PATTERN, TICK_PATH, markStyle } from './marks';
+import { LINKED_STROKE, TICK_PATH, markStyle } from './marks';
+import { sameProps } from './memo';
+import { usePatterns } from './patterns';
 import { PrimGroup } from './PrimGroup';
 
-export function TNode({ p }: { p: TNodePrim }) {
+export const TNode = memo(function TNode({ p }: { p: TNodePrim }) {
+  const PATTERN = usePatterns();
   const s = markStyle(p.mark);
   const r = TREE_NODE_R;
   const stroke = linkedOr(p, s.stroke);
@@ -26,7 +30,7 @@ export function TNode({ p }: { p: TNodePrim }) {
       )}
     </PrimGroup>
   );
-}
+}, sameProps);
 
 function linkedOr(p: TNodePrim, stroke: string): string {
   if (p.compared) return 'var(--amber)';

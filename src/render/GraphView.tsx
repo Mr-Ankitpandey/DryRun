@@ -1,6 +1,5 @@
 /** Graph: fixed topology; edges under nodes. Only marks and labels change. */
 
-import { AnimatePresence } from 'motion/react';
 import type { Scene } from '@/engine/scene';
 import { primsOf } from '@/engine/scene';
 import { Edge } from './Edge';
@@ -15,11 +14,9 @@ export function GraphView({ scene }: { scene: Scene }) {
       {edges.map((e) => (
         <Edge key={e.id} p={e} />
       ))}
-      <AnimatePresence initial={false}>
-        {nodes.map((n) => (
-          <GNode key={n.id} p={n} />
-        ))}
-      </AnimatePresence>
+      {nodes.map((n) => (
+        <GNode key={n.id} p={n} />
+      ))}
     </g>
   );
 }

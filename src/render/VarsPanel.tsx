@@ -5,15 +5,18 @@ import type { Scene } from '@/engine/scene';
 import { VARS_PANEL, primsOf } from '@/engine/scene';
 import { useHoverHandlers, useLinked } from './HoverProvider';
 
+/** Internal bookkeeping vars (e.g. `dist:3`, mirrored by a table) are hidden. */
+const hidden = (name: string) => name.includes(':');
+
 export function VarsPanel({ scene }: { scene: Scene }) {
   const rows = primsOf(scene, 'row')
-    .filter((r) => r.panel === VARS_PANEL)
+    .filter((r) => r.panel === VARS_PANEL && !hidden(r.label))
     .sort((a, b) => a.order - b.order);
   return (
-    <section data-testid="panel-vars" style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>
-      <h3 style={{ fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>vars</h3>
-      <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '2px 12px', margin: 0, padding: '4px 8px', border: '1px solid var(--rule)', borderRadius: 4, background: 'var(--surface)', minHeight: 20 }}>
-        {rows.length === 0 && <dd style={{ margin: 0, gridColumn: '1 / -1', color: 'var(--ink-2)' }}>none yet</dd>}
+    <section data-testid="panel-vars" className="min-w-0 font-mono text-sm">
+      <h3 className="mb-1 font-sans text-sm font-medium text-ink-2">Variables</h3>
+      <dl className="m-0 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-0.5 rounded-sm border border-rule bg-surface px-2 py-1.5">
+        {rows.length === 0 && <dd className="col-span-2 m-0 text-ink-2">none yet</dd>}
         {rows.map((r) => (
           <VarRow key={r.id} id={r.id} name={r.label} value={r.text ?? ''} />
         ))}
@@ -25,13 +28,13 @@ export function VarsPanel({ scene }: { scene: Scene }) {
 function VarRow({ id, name, value }: { id: string; name: string; value: string }) {
   const linked = useLinked(id);
   const handlers = useHoverHandlers(id);
-  const bg = linked ? 'color-mix(in srgb, var(--pen) 12%, transparent)' : 'transparent';
+  const bg = linked ? 'bg-hatch' : '';
   return (
     <>
-      <dt data-id={id} data-linked={linked ? 'true' : undefined} {...handlers} style={{ color: 'var(--pen)', background: bg }}>
+      <dt data-id={id} data-linked={linked ? 'true' : undefined} {...handlers} className={`text-pen ${bg}`}>
         {name}
       </dt>
-      <dd {...handlers} style={{ margin: 0, background: bg }}>
+      <dd {...handlers} className={`m-0 truncate ${bg}`}>
         = {value}
       </dd>
     </>

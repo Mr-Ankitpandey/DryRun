@@ -1,7 +1,6 @@
 /** Recursion tree: one pill per call frame under the array, joined to its
  *  parent. Frames persist after they return (greyed, ticked). */
 
-import { AnimatePresence } from 'motion/react';
 import type { Scene } from '@/engine/scene';
 import { primsOf } from '@/engine/scene';
 import { Edge } from './Edge';
@@ -13,16 +12,12 @@ export function RecursionTree({ scene }: { scene: Scene }) {
   const edges = primsOf(scene, 'fedge');
   return (
     <g data-view="recursion">
-      <AnimatePresence initial={false}>
-        {edges.map((e) => (
-          <Edge key={e.id} p={e} />
-        ))}
-      </AnimatePresence>
-      <AnimatePresence initial={false}>
-        {frames.map((f) => (
-          <Frame key={f.id} p={f} />
-        ))}
-      </AnimatePresence>
+      {edges.map((e) => (
+        <Edge key={e.id} p={e} />
+      ))}
+      {frames.map((f) => (
+        <Frame key={f.id} p={f} />
+      ))}
     </g>
   );
 }
