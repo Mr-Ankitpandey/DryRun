@@ -79,7 +79,11 @@ export function AccuracyPanel({ title, series, asked, correct }: AccuracyPanelPr
           className="block h-auto w-full touch-pan-y select-none"
           onPointerMove={(e) => setCursor(nearestDay(toViewBoxX(e), n))}
           onPointerDown={(e) => setCursor(nearestDay(toViewBoxX(e), n))}
-          onPointerLeave={() => setCursor(null)}
+          // Touch pointers "leave" as soon as the finger lifts; keep the tapped
+          // day's readout until the next tap. Only a mouse clears on leave.
+          onPointerLeave={(e) => {
+            if (e.pointerType === 'mouse') setCursor(null);
+          }}
         >
           {GRID.map((g) => (
             <g key={g}>

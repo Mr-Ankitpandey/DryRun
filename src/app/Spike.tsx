@@ -138,10 +138,10 @@ function SpikeTrace({ id, presetId }: { id: string; presetId: string | null }) {
 
             <section aria-label="controls" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
               <button type="button" data-testid="prev" onClick={() => dispatch({ type: 'prev' })} disabled={tl.k === 0} style={btn}>
-                ◀ Prev
+                Prev
               </button>
               <button type="button" data-testid="next" onClick={() => dispatch({ type: 'next' })} disabled={tl.k >= tl.length} style={btn}>
-                Next ▶
+                Next
               </button>
               <input
                 type="range"

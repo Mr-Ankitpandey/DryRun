@@ -181,7 +181,7 @@ test.describe('mistakes', () => {
 });
 
 test.describe('progress', () => {
-  test('one small multiple per algorithm, a table twin and mistakes by kind', async ({ page }) => {
+  test('one small multiple per algorithm, a table twin and mistakes by kind', async ({ isMobile, page }) => {
     const store = seededStore(Date.now());
     const errors = await boot(page, store);
     await open(page, '/progress');
@@ -194,9 +194,12 @@ test.describe('progress', () => {
     await expect(page.getByTestId('mistake-bar')).toHaveCount(new Set(store.mistakes.map((m) => m.kind)).size);
     // Hover snaps a crosshair to a day and reads it out.
     const svg = page.getByTestId('accuracy-panel').nth(1).locator('svg');
+    await svg.scrollIntoViewIfNeeded();
     const box = await svg.boundingBox();
     if (!box) throw new Error('no chart box');
-    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.4);
+    // Phones have no hover: a tap reads the day (onPointerDown).
+    if (isMobile) await page.touchscreen.tap(box.x + box.width * 0.5, box.y + box.height * 0.4);
+    else await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.4);
     await expect(page.getByTestId('accuracy-panel').nth(1).locator('[aria-live]')).toContainText(/(Aug|Sep|Oct) \d+/);
     await page.getByTestId('accuracy-panel').nth(1).screenshot({ path: `${SHOTS}/progress-hover.png` });
     await page.mouse.move(0, 0);

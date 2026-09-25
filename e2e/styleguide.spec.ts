@@ -76,8 +76,10 @@ test('reduced motion: transitions resolve to duration 0 and the toggle persists'
   await page.getByRole('switch', { name: 'Reduce motion' }).first().click();
   await expect(motionSection.getByText('Reduced motion: on (setting)')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced');
-  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('dryrun.v1') ?? '{}'));
-  expect(stored.settings?.motion).toBe('reduced');
+  // Saves are debounced by the StoreProvider, so wait for the write.
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('dryrun.v1') ?? '{}').settings?.motion))
+    .toBe('reduced');
   expect(errors).toEqual([]);
 });
 

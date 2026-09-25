@@ -105,7 +105,7 @@ test.describe('library', () => {
     await page.goto(`${ORIGIN}/algorithms`);
     await expect(page.getByRole('heading', { level: 1, name: 'Algorithms' })).toBeVisible();
     const rows = page.locator('tbody tr');
-    await expect(rows).toHaveCount(4);
+    await expect(rows).toHaveCount(8);
 
     const bs = page.getByTestId('algo-row-binary-search');
     await expect(bs).toContainText('75%');
@@ -117,13 +117,16 @@ test.describe('library', () => {
     await expect(page.getByTestId('algo-row-bst')).toContainText('no answers yet');
 
     await page.getByRole('radio', { name: 'Graphs' }).click();
-    await expect(rows).toHaveCount(1);
+    await expect(rows).toHaveCount(2);
     await expect(page.getByTestId('algo-row-dijkstra')).toBeVisible();
-    await page.getByRole('radio', { name: 'Graphs' }).press('ArrowRight');
-    await expect(page.getByRole('radio', { name: 'All' })).toHaveAttribute('aria-checked', 'true');
-    await expect(rows).toHaveCount(4);
+    await expect(page.getByTestId('algo-row-bfs')).toBeVisible();
+    // Arrow keys move the selection (roving radio group).
+    await page.getByRole('radio', { name: 'Graphs' }).press('ArrowLeft');
+    await expect(page.getByRole('radio', { name: 'Graphs' })).toHaveAttribute('aria-checked', 'false');
+    await page.getByRole('radio', { name: 'All' }).click();
+    await expect(rows).toHaveCount(8);
     await page.getByRole('radio', { name: 'Sorting' }).click();
-    await expect(rows).toHaveCount(1);
+    await expect(rows).toHaveCount(3);
     await expect(page.getByTestId('algo-row-quick-sort')).toBeVisible();
 
     await page.getByRole('link', { name: 'Quick sort (Lomuto)' }).click();
@@ -134,7 +137,7 @@ test.describe('library', () => {
   test('two columns on a phone, no horizontal scroll', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${ORIGIN}/algorithms`);
-    await expect(page.locator('tbody tr')).toHaveCount(4);
+    await expect(page.locator('tbody tr')).toHaveCount(8);
     const visibleCols = await page.locator('thead th').evaluateAll((ths) => ths.filter((th) => getComputedStyle(th).display !== 'none').length);
     expect(visibleCols).toBe(2);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
