@@ -50,6 +50,38 @@ export const registry: RegistryEntry[] = [
     minutes: 4,
     load: () => import('./bst').then((m) => erase(m.bst)),
   },
+  {
+    id: 'insertion-sort',
+    title: 'Insertion sort',
+    family: 'sort',
+    practice: 'Which element shifts into the gap, whether a[j] moves, and where the key lands.',
+    minutes: 4,
+    load: () => import('./insertion-sort').then((m) => erase(m.insertionSort)),
+  },
+  {
+    id: 'merge-sort',
+    title: 'Merge sort (top-down)',
+    family: 'sort',
+    practice: 'Which front is copied next, what is left over, and which call returns.',
+    minutes: 6,
+    load: () => import('./merge-sort').then((m) => erase(m.mergeSort)),
+  },
+  {
+    id: 'bfs',
+    title: 'Breadth-first search',
+    family: 'graph',
+    practice: 'Which node leaves the queue, what the queue holds after each discovery, and each dist.',
+    minutes: 4,
+    load: () => import('./bfs').then((m) => erase(m.bfs)),
+  },
+  {
+    id: 'knapsack',
+    title: '0/1 knapsack',
+    family: 'dp',
+    practice: 'The value of each cell, which cell it reads besides the one above, and which items are taken.',
+    minutes: 6,
+    load: () => import('./knapsack').then((m) => erase(m.knapsack)),
+  },
 ];
 
 export function findEntry(id: string): RegistryEntry | undefined {
