@@ -1,11 +1,13 @@
 /** Review `/review` (docs/DESIGN.md §5, §6.7): the due re-traces, one after the
- *  other, each on a fresh seeded input. The trace player persists every session,
- *  which reschedules the item; this screen keeps a snapshot of the queue it
- *  started with, so items do not reshuffle mid-review. */
+ *  other, each on a fresh seeded input aimed at the learner's weakest recent kind
+ *  of mistake (src/learn/review-input.ts). The trace player persists every
+ *  session, which reschedules the item; this screen keeps a snapshot of the
+ *  queue and of the mistakes it started with, so items do not reshuffle and
+ *  inputs do not change mid-review. */
 
 import { useMemo, useState } from 'react';
 import { findEntry } from '@/algorithms/registry';
-import type { ReviewItem } from '@/lib/storage';
+import type { MistakeRecord, ReviewItem } from '@/lib/storage';
 import { dueItems } from '@/learn/scheduler';
 import { AppShell } from '@/ui/AppShell';
 import { Button } from '@/ui/Button';
@@ -30,6 +32,7 @@ export default function Review() {
   const { store } = useStore();
   const [now] = useState(() => Date.now());
   const [queue, setQueue] = useState<ReviewItem[]>([]);
+  const [mistakes, setMistakes] = useState<readonly MistakeRecord[]>([]);
   const [phase, setPhase] = useState<Phase>({ name: 'intro' });
   const [results, setResults] = useState<ItemResult[]>([]);
 
@@ -38,6 +41,7 @@ export default function Review() {
 
   function start() {
     setQueue(due);
+    setMistakes(store.mistakes);
     setResults([]);
     setPhase({ name: 'running', index: 0 });
   }
@@ -72,6 +76,8 @@ export default function Review() {
             key={`${item.algorithm}:${item.reviews}`}
             item={item}
             level={store.settings.level}
+            mistakes={mistakes}
+            now={now}
             onFinish={(session) => {
               setResults((rs) => [...rs, itemResult(session, titleOf(item.algorithm))]);
               finishItem(phase.index);

@@ -3,7 +3,9 @@ import { Link } from 'wouter';
 import type { Level } from '@/lib/storage';
 import type { MistakeKindGroup } from '@/trace/mistakes';
 import { retraceUrl } from '@/trace/mistakes';
+import { targetFor } from '@/learn/targets';
 import { Button } from '@/ui/Button';
+import { PracticeLink } from './PracticeLink';
 import { plural, timeAgo } from './format';
 import { algorithmsOf, traceRows } from './mistakes-view';
 import { textLink } from './styles';
@@ -22,7 +24,9 @@ const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
 
 /** One mistake kind as an accordion row. The count sits in a dashed red box,
  *  the same red-pencil outline the ghost uses on the stage, so the bank reads
- *  as the collected ghosts. Expanded, it lists the traces with a re-trace link. */
+ *  as the collected ghosts. Expanded, it lists the traces with a re-trace link
+ *  and, where some input shape exercises this kind in that algorithm, a link to
+ *  practise it on a new input. */
 export function MistakeKindRow({ group, now, level, defaultOpen = false }: MistakeKindRowProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [showAll, setShowAll] = useState(false);
@@ -31,6 +35,16 @@ export function MistakeKindRow({ group, now, level, defaultOpen = false }: Mista
   const visible = showAll ? rows : rows.slice(0, PAGE);
   const algs = algorithmsOf(group.occurrences).map(titleOf);
   const manyAlgorithms = algs.length > 1;
+  const canPractise = rows.some((r) => targetFor(r.algorithm, group.kind) !== null);
+  // One practise link per algorithm, on its newest visible trace: every click
+  // makes a new input anyway, so repeating it on each row would be noise.
+  const practiseRows = new Set<string>();
+  const seenAlgorithms = new Set<string>();
+  for (const r of visible) {
+    if (seenAlgorithms.has(r.algorithm)) continue;
+    seenAlgorithms.add(r.algorithm);
+    if (targetFor(r.algorithm, group.kind)) practiseRows.add(r.key);
+  }
 
   return (
     <li data-testid="mistake-kind" data-kind={group.kind} className="max-w-none">
@@ -76,7 +90,8 @@ export function MistakeKindRow({ group, now, level, defaultOpen = false }: Mista
       </h2>
       <div id={`${base}-panel`} role="region" aria-labelledby={`${base}-label`} hidden={!open} className="border-t border-rule px-4 pt-3 pb-4 sm:pl-18">
         <p className="text-sm text-ink-2">
-          {plural(rows.length, 'trace')} in {algs.join(', ')}. Re-tracing opens the same input with the same seed.
+          {plural(rows.length, 'trace')} in {algs.join(', ')}. Re-tracing opens the same input with the same seed
+          {canPractise ? '; practising builds a new input with the same kind of catch.' : '.'}
         </p>
         <ul className="mt-2 divide-y divide-rule">
           {visible.map((r) => (
@@ -88,9 +103,14 @@ export function MistakeKindRow({ group, now, level, defaultOpen = false }: Mista
                   {plural(r.count, 'mistake')} of this kind in this trace
                 </span>
               </span>
-              <Link href={retraceUrl(r, level)} className={`${textLink} inline-flex min-h-11 items-center`}>
-                Re-trace this input
-              </Link>
+              <span className="flex flex-wrap gap-x-5">
+                <Link href={retraceUrl(r, level)} className={`${textLink} inline-flex min-h-11 items-center`}>
+                  Re-trace this input
+                </Link>
+                {practiseRows.has(r.key) ? (
+                  <PracticeLink algorithm={r.algorithm} kind={group.kind} level={level} className="inline-flex min-h-11 items-center" />
+                ) : null}
+              </span>
             </li>
           ))}
         </ul>

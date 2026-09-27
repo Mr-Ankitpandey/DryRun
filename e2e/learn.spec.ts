@@ -1,16 +1,22 @@
-/** Visual + behaviour QA for the learning screens (WP-H): /review, /mistakes,
- *  /progress, /settings. The store is seeded into localStorage `dryrun.v1`
- *  once per tab (sessionStorage flag), so reloads keep what the page saved.
- *  Screenshots go to ./.scratch/wp-h/shots/. Set DRYRUN_URL to point at a
+/** Visual + behaviour QA for the learning screens (WP-H, WP-L): /review,
+ *  /mistakes, /progress, /settings, including review inputs aimed at the
+ *  learner's weakest kind of mistake and "Practise this on a new input".
+ *  The store is seeded into localStorage `dryrun.v1` once per tab
+ *  (sessionStorage flag), so reloads keep what the page saved.
+ *  Screenshots go to ./.scratch/wp-l/shots/. Set DRYRUN_URL to point at a
  *  running dev server; otherwise the config's baseURL is used. */
 
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import type { MistakeRecord, ReviewItem, SessionRecord, Store } from '../src/lib/storage';
+import type { MistakeKind } from '../src/trace/asks';
+// Plain data and string helpers only (their imports are type-only), so they load in the test runner.
+import { targetFor, targetSentence } from '../src/learn/targets';
+import { hasStalePop } from '../src/algorithms/dijkstra/input';
 
 const ORIGIN = process.env.DRYRUN_URL ?? '';
-const SHOTS = './.scratch/wp-h/shots';
+const SHOTS = './.scratch/wp-l/shots';
 const DAY = 24 * 60 * 60 * 1000;
 
 const INPUTS: Record<string, string> = {
@@ -145,6 +151,159 @@ test.describe('review', () => {
   });
 });
 
+/** The weakest kind per algorithm used below, one per launch algorithm. */
+const WEAK: Record<string, MistakeKind> = {
+  'binary-search': 'boundary',
+  'quick-sort': 'comparison',
+  dijkstra: 'stale',
+  bst: 'subtree',
+  'insertion-sort': 'shift-vs-swap',
+  'merge-sort': 'order',
+  bfs: 'order',
+  knapsack: 'dependency',
+};
+
+/** Every launch algorithm due, each with recent mistakes of one kind (plus older noise of another kind). */
+function weakSpotStore(now: number): Store {
+  const store = emptyStore();
+  const ids = Object.keys(WEAK);
+  ids.forEach((algorithm, a) => {
+    const kind = WEAK[algorithm] as MistakeKind;
+    store.review[algorithm] = { algorithm, box: 0, due: now - DAY - a * 60_000, reviews: 1, lastScore: 0.5 };
+    for (let m = 0; m < 3; m++) {
+      store.mistakes.push({ id: `w-${algorithm}-${m}`, algorithm, kind, rule: 'r', seed: `wk${a}`, input: 'i=1', askIndex: m, at: now - (m + 1) * DAY });
+    }
+    // Older than 30 days: must not count.
+    for (let m = 0; m < 5; m++) {
+      store.mistakes.push({ id: `o-${algorithm}-${m}`, algorithm, kind: 'unclassified', rule: 'r', seed: `old${a}`, input: 'i=1', askIndex: m, at: now - 45 * DAY });
+    }
+  });
+  store.meta = { firstSeen: now - 50 * DAY, lastSeen: now - DAY };
+  return store;
+}
+
+/** Opens one kind's accordion row (the most frequent kind starts open) and returns it. */
+async function openKind(page: Page, kind: string) {
+  const group = page.locator(`[data-testid="mistake-kind"][data-kind="${kind}"]`);
+  const button = group.getByRole('button').first();
+  if ((await button.getAttribute('aria-expanded')) !== 'true') await button.click();
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  return group;
+}
+
+test.describe('targeted review', () => {
+  test('a store with stale Dijkstra mistakes gets a stale-entry input and says why', async ({ page }) => {
+    const errors = await boot(page, seededStore(Date.now()));
+    await open(page, '/review');
+    await page.getByRole('button', { name: 'Re-trace Dijkstra (lazy deletion)' }).click();
+    await expect(page.getByTestId('trace-player')).toBeVisible();
+    const why = page.getByTestId('review-target');
+    await expect(why).toHaveText(targetSentence('dijkstra', 'stale') ?? 'missing');
+    await expect(why).toHaveText(/^This graph has a stale entry that pops, .*: recently you stumbled most on stale entries\.$/);
+    // One sentence, then the player itself (stage drawn) below it.
+    await expect(page.getByTestId('trace-player').locator('svg').first()).toBeVisible();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${SHOTS}/review-targeted-${page.viewportSize()?.width ?? 0}.png` });
+    expect(errors).toEqual([]);
+  });
+
+  test('only unclassified mistakes: a plain fresh input and no sentence', async ({ page }) => {
+    const store = seededStore(Date.now());
+    store.mistakes = store.mistakes.map((m) => ({ ...m, kind: 'unclassified' }));
+    const errors = await boot(page, store);
+    await open(page, '/review');
+    await page.getByRole('button', { name: 'Re-trace Dijkstra (lazy deletion)' }).click();
+    await expect(page.getByTestId('trace-player')).toBeVisible();
+    await expect(page.getByTestId('review-target')).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+
+  test('all eight algorithms: each re-trace names its weakest kind', async ({ page }) => {
+    test.setTimeout(90_000);
+    const errors = await boot(page, weakSpotStore(Date.now()));
+    await open(page, '/review');
+    await expect(page.getByTestId('due-item')).toHaveCount(8);
+    await page.getByRole('button', { name: /^Re-trace / }).click();
+    const seen: string[] = [];
+    for (let i = 0; i < 8; i++) {
+      await expect(page.getByText(`Re-trace ${i + 1} of 8`)).toBeVisible();
+      await expect(page.getByTestId('trace-player')).toBeVisible();
+      const title = (await page.locator('#review-current').textContent()) ?? '';
+      const why = (await page.getByTestId('review-target').textContent()) ?? '';
+      const match = Object.entries(WEAK).find(([id, kind]) => why === targetSentence(id, kind));
+      expect(match, `${title}: "${why}"`).toBeTruthy();
+      seen.push(match?.[0] ?? '');
+      await page.getByRole('button', { name: 'Skip this one' }).click();
+      if (i < 7) await page.getByRole('button', { name: 'Next re-trace' }).click();
+    }
+    expect(seen.sort()).toEqual(Object.keys(WEAK).sort());
+    await expect(page.getByRole('heading', { level: 1, name: 'Review done' })).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe('practise this on a new input', () => {
+  test('a stale-entry mistake opens Dijkstra on a new graph with a stale pop', async ({ page }) => {
+    const errors = await boot(page, seededStore(Date.now()));
+    await open(page, '/mistakes');
+    const stale = await openKind(page, 'stale');
+    const link = stale.getByTestId('practice-link').first();
+    await expect(link).toHaveText('Practise this on a new input');
+    // Kinds with no target have no practise link.
+    const other = await openKind(page, 'unclassified');
+    await expect(other.getByRole('link', { name: 'Re-trace this input' }).first()).toBeVisible();
+    await expect(other.getByTestId('practice-link')).toHaveCount(0);
+
+    // One practise link per algorithm in a kind, on its newest trace.
+    await expect(stale.getByTestId('practice-link')).toHaveCount(1);
+    await expect(stale.getByTestId('mistake-trace').first().getByTestId('practice-link')).toHaveCount(1);
+    await stale.screenshot({ path: `${SHOTS}/mistakes-practise-${page.viewportSize()?.width ?? 0}.png` });
+    await link.click();
+    await page.waitForURL(/\/t\/dijkstra\?/);
+    await expect(page.getByTestId('trace-player')).toBeVisible();
+    await expect(page.getByText('could not be read')).toHaveCount(0);
+    const url = new URL(page.url());
+    expect(url.searchParams.get('mode')).toBe('trace');
+    expect(url.searchParams.get('level')).toBe('guided');
+    expect(url.searchParams.get('seed')).toMatch(/^[a-z2-9]{6}$/);
+    const g = url.searchParams.get('g') ?? '';
+    const edges = g.split(',').map((e) => {
+      const [ab, w] = e.split(':');
+      const [a, b] = (ab ?? '').split('-');
+      return { a: Number(a), b: Number(b), w: Number(w) };
+    });
+    const input = { n: Number(url.searchParams.get('n')), s: Number(url.searchParams.get('s')), edges };
+    expect(hasStalePop(input), `graph ${g}`).toBe(true);
+    // A second click is a different input.
+    await page.goBack();
+    await (await openKind(page, 'stale')).getByTestId('practice-link').first().click();
+    await page.waitForURL(/\/t\/dijkstra\?/);
+    expect(page.url()).not.toBe(url.toString());
+    expect(errors).toEqual([]);
+  });
+
+  test('all eight algorithms: the practise link opens a working trace', async ({ page }) => {
+    test.setTimeout(90_000);
+    const errors = await boot(page, weakSpotStore(Date.now()));
+    for (const [algorithm, kind] of Object.entries(WEAK)) {
+      await open(page, '/mistakes');
+      const group = await openKind(page, kind);
+      const row = group.getByTestId('mistake-trace').filter({ has: page.locator(`a[href^="/t/${algorithm}?"]`) });
+      await row.getByTestId('practice-link').click();
+      await page.waitForURL(new RegExp(`/t/${algorithm}\\?`));
+      await expect(page.getByTestId('trace-player')).toBeVisible();
+      await expect(page.getByText('could not be read')).toHaveCount(0);
+      const url = new URL(page.url());
+      expect(url.searchParams.get('seed'), algorithm).toMatch(/^[a-z2-9]{6}$/);
+      expect(url.searchParams.get('mode')).toBe('trace');
+      expect(targetFor(algorithm, kind)).not.toBeNull();
+      // The encoded input is there (every module encodes into at least one param besides these).
+      expect([...url.searchParams.keys()].filter((k) => !['seed', 'mode', 'level'].includes(k)).length, algorithm).toBeGreaterThan(0);
+    }
+    expect(errors).toEqual([]);
+  });
+});
+
 test.describe('mistakes', () => {
   test('groups by kind with rule, count, last seen and re-trace links', async ({ page }) => {
     const store = seededStore(Date.now());
@@ -233,6 +392,35 @@ test.describe('settings', () => {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(page.getByRole('radiogroup', { name: 'Theme' }).getByRole('radio', { name: 'Dark' })).toHaveAttribute('aria-checked', 'true');
     await expect(page.getByRole('radiogroup', { name: 'Default level' }).getByRole('radio', { name: 'Full' })).toHaveAttribute('aria-checked', 'true');
+    expect(errors).toEqual([]);
+  });
+
+  test('blind level and code language persist across reload and reach practise links', async ({ page }) => {
+    const errors = await boot(page, seededStore(Date.now()));
+    await open(page, '/settings');
+    const level = page.getByRole('radiogroup', { name: 'Default level' });
+    await level.getByRole('radio', { name: 'Blind' }).click();
+    await expect(page.getByText('the stage freezes between questions; run the hidden steps in your head')).toBeVisible();
+    const lang = page.getByRole('radiogroup', { name: 'Code shown next to traces' });
+    await expect(lang.getByRole('radio')).toHaveCount(5);
+    await expect(lang.locator('[data-value="pseudo"]')).toHaveAttribute('aria-checked', 'true');
+    await lang.locator('[data-value="python"]').click();
+    await page.waitForFunction(() => {
+      const s = JSON.parse(localStorage.getItem('dryrun.v1') ?? '{}').settings;
+      return s?.level === 'blind' && s?.language === 'python';
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await expect(level.getByRole('radio', { name: 'Blind' })).toHaveAttribute('aria-checked', 'true');
+    await expect(lang.locator('[data-value="python"]')).toHaveAttribute('aria-checked', 'true');
+    // Keyboard moves along the five keys.
+    await lang.locator('[data-value="python"]').focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(lang.locator('[data-value="cpp"]')).toHaveAttribute('aria-checked', 'true');
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('dryrun.v1') ?? '{}').settings?.language === 'cpp');
+    // The stored level is used by practise links.
+    await open(page, '/mistakes');
+    await (await openKind(page, 'stale')).getByTestId('practice-link').first().click();
+    await page.waitForURL(/\/t\/dijkstra\?.*level=blind/);
     expect(errors).toEqual([]);
   });
 

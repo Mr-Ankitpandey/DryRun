@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AlgorithmModule } from '@/algorithms/types';
 import { findEntry } from '@/algorithms/registry';
-import { createRng } from '@/lib/rng';
-import type { Level, ReviewItem } from '@/lib/storage';
-import { reviewSeed } from '@/learn/scheduler';
+import type { Level, MistakeRecord, ReviewItem } from '@/lib/storage';
+import { reviewInput } from '@/learn/review-input';
+import { targetSentence } from '@/learn/targets';
+import type { MistakeKind } from '@/trace/asks';
 import type { Session } from '@/trace/session';
 import { Button } from '@/ui/Button';
 import { TracePlayer } from '../trace/TracePlayer';
@@ -11,15 +12,24 @@ import { TracePlayer } from '../trace/TracePlayer';
 export interface ReviewItemRunnerProps {
   item: ReviewItem;
   level: Level;
+  /** Mistakes as they were when the review started (a snapshot, so the input
+   *  does not change when this re-trace records new mistakes). */
+  mistakes: readonly MistakeRecord[];
+  /** When the review started; "recent" mistakes are counted back from here. */
+  now: number;
   onFinish: (session: Session) => void;
 }
 
-type Loaded = { status: 'loading' } | { status: 'error' } | { status: 'ready'; module: AlgorithmModule<unknown>; input: unknown; seed: string };
+type Loaded =
+  | { status: 'loading' }
+  | { status: 'error' }
+  | { status: 'ready'; module: AlgorithmModule<unknown>; input: unknown; seed: string; target: MistakeKind | null };
 
-/** Loads one due algorithm, builds its fresh review input from the review seed
- *  and runs it in the trace player. The player persists the session, which
- *  reschedules the item; this component only reports the finish upward. */
-export function ReviewItemRunner({ item, level, onFinish }: ReviewItemRunnerProps) {
+/** Loads one due algorithm, builds its fresh review input from the review seed,
+ *  aimed at the learner's weakest recent kind of mistake when an input can
+ *  exercise it, and runs it in the trace player. The player persists the
+ *  session, which reschedules the item; this component only reports the finish. */
+export function ReviewItemRunner({ item, level, mistakes, now, onFinish }: ReviewItemRunnerProps) {
   const entry = findEntry(item.algorithm);
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<{ attempt: number; value: Loaded }>({ attempt: 0, value: { status: 'loading' } });
@@ -28,13 +38,12 @@ export function ReviewItemRunner({ item, level, onFinish }: ReviewItemRunnerProp
   useEffect(() => {
     if (!entry) return;
     let live = true;
-    const seed = reviewSeed(item.algorithm, item.reviews);
     entry
       .load()
       .then((module) => {
         if (!live) return;
-        const input = module.randomInput(createRng(seed));
-        setLoaded({ attempt, value: { status: 'ready', module, input, seed } });
+        const r = reviewInput(module, item.algorithm, item, mistakes, now);
+        setLoaded({ attempt, value: { status: 'ready', module, ...r } });
       })
       .catch(() => {
         if (live) setLoaded({ attempt, value: { status: 'error' } });
@@ -42,7 +51,7 @@ export function ReviewItemRunner({ item, level, onFinish }: ReviewItemRunnerProp
     return () => {
       live = false;
     };
-  }, [entry, item.algorithm, item.reviews, attempt]);
+  }, [entry, item, mistakes, now, attempt]);
 
   const title = entry?.title ?? item.algorithm;
   const state: Loaded = loaded.attempt === attempt ? loaded.value : { status: 'loading' };
@@ -66,20 +75,28 @@ export function ReviewItemRunner({ item, level, onFinish }: ReviewItemRunnerProp
       </p>
     );
   }
+  const why = state.target ? targetSentence(item.algorithm, state.target) : null;
   return (
-    <TracePlayer
-      module={state.module}
-      input={state.input}
-      seed={state.seed}
-      mode="trace"
-      level={level}
-      variant="full"
-      persist
-      onFinish={(session) => {
-        if (finished.current) return;
-        finished.current = true;
-        onFinish(session);
-      }}
-    />
+    <>
+      {why ? (
+        <p data-testid="review-target" className="mb-4 max-w-prose text-base text-ink-2">
+          {why}
+        </p>
+      ) : null}
+      <TracePlayer
+        module={state.module}
+        input={state.input}
+        seed={state.seed}
+        mode="trace"
+        level={level}
+        variant="full"
+        persist
+        onFinish={(session) => {
+          if (finished.current) return;
+          finished.current = true;
+          onFinish(session);
+        }}
+      />
+    </>
   );
 }

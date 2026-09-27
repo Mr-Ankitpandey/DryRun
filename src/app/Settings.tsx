@@ -1,10 +1,12 @@
-/** Settings `/settings` (docs/DESIGN.md §5): appearance, default level, backup
- *  and restore, erase, the session summary for feedback, and the app version.
- *  Every change goes through the store (useStore / useTheme). */
+/** Settings `/settings` (docs/DESIGN.md §5): appearance, default level, the
+ *  code shown next to traces, backup and restore, erase, the session summary for
+ *  feedback, and the app version. Every change goes through the store
+ *  (useStore / useTheme). */
 
+import type { ReactNode } from 'react';
 import { useStore } from '@/ui/store';
 import { useTheme } from '@/ui/theme';
-import type { Level, MotionPref, Theme } from '@/lib/storage';
+import type { CodeLanguage, Level, MotionPref, Theme } from '@/lib/storage';
 import { AppShell } from '@/ui/AppShell';
 import { Segmented } from '@/ui/Segmented';
 import { Toast } from '@/ui/Toast';
@@ -31,6 +33,24 @@ const MOTION: ReadonlyArray<{ value: MotionPref; label: string }> = [
 const LEVELS: ReadonlyArray<{ value: Level; label: string }> = [
   { value: 'guided', label: 'Guided' },
   { value: 'full', label: 'Full' },
+  { value: 'blind', label: 'Blind' },
+];
+
+/** Full names where there is room; phones get short ones so five keys fit in
+ *  one row. The hidden half is display:none, so each key has one accessible name. */
+const short = (long: string, abbr: string) => (
+  <>
+    <span className="sm:hidden">{abbr}</span>
+    <span className="hidden sm:inline">{long}</span>
+  </>
+);
+
+const LANGUAGES: ReadonlyArray<{ value: CodeLanguage; label: ReactNode }> = [
+  { value: 'pseudo', label: short('Pseudocode', 'Pseudo') },
+  { value: 'js', label: short('JavaScript', 'JS') },
+  { value: 'python', label: 'Python' },
+  { value: 'cpp', label: 'C++' },
+  { value: 'java', label: 'Java' },
 ];
 
 export default function Settings() {
@@ -66,13 +86,31 @@ export default function Settings() {
             <SettingRow
               labelId="level-l"
               label="Default level"
-              hint="Guided asks at the key moments. Full asks at every step that has a question. Used for new traces and re-traces."
+              hint={
+                <>
+                  Guided asks at the key moments. Full asks at every step that has a question. Blind asks what Full
+                  asks, but the stage freezes between questions; run the hidden steps in your head. Used for new
+                  traces and re-traces.
+                </>
+              }
             >
               <Segmented
                 label="Default level"
                 options={LEVELS}
                 value={store.settings.level}
                 onChange={(level) => update((s) => ({ ...s, settings: { ...s.settings, level } }))}
+              />
+            </SettingRow>
+            <SettingRow
+              labelId="language-l"
+              label="Code shown next to traces"
+              hint="Questions follow the pseudocode either way. Choose a language to see the same steps in it beside the trace."
+            >
+              <Segmented
+                label="Code shown next to traces"
+                options={LANGUAGES}
+                value={store.settings.language}
+                onChange={(language) => update((s) => ({ ...s, settings: { ...s.settings, language } }))}
               />
             </SettingRow>
           </div>
