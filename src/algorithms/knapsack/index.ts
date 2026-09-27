@@ -3,7 +3,8 @@ import { cellKey } from '@/engine/ids';
 import type { State } from '@/engine/state';
 import { emptyState } from '@/engine/state';
 import type { KnapsackInput } from './generator';
-import { generate, table } from './generator';
+import { generate, table, structure } from './generator';
+import { applyEvent } from '@/engine/reducer';
 import { code } from './code';
 import { MAX_ITEMS, decode, encode, presets, randomInput, validate } from './input';
 
@@ -135,7 +136,7 @@ export const knapsack: AlgorithmModule<KnapsackInput> = {
   pseudocode,
   code,
   invariant: { bottomup: { name: 'Row above only', sentence: 'dp[i][c] uses only the row above.' } },
-  initialState: () => emptyState(),
+  initialState: (input) => structure(input).reduce(applyEvent, emptyState()),
   generate,
   reference,
   result,

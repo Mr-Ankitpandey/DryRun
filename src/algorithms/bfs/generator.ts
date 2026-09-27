@@ -68,12 +68,6 @@ export function* generate(input: BfsInput): Iterable<Step> {
   yield {
     line: 1,
     events: [
-      {
-        t: 'graph',
-        nodes: Array.from({ length: n }, (_, i) => ({ id: node(i), label: String(i) })),
-        edges: input.edges.map((e) => ({ id: ids.edge(e.a, e.b), a: node(e.a), b: node(e.b) })),
-      },
-      { t: 'panel', panel: QUEUE, kind: 'queue' },
       { t: 'label', id: node(s), text: '0' },
       { t: 'mark', ref: { id: node(s) }, as: 'frontier' },
       { t: 'push', panel: QUEUE, item: enqueue(s) },
@@ -183,4 +177,17 @@ function distAsk(u: number, v: number, du: number): Ask {
     { answer: du + 2, kind: 'boundary', rule: RULE_DIST },
   ];
   return { kind: 'value', level: 'full', prompt: `${u} (dist ${du}) discovers ${v}. What is dist[${v}]?`, answer: du + 1, rule: RULE_DIST, distractors };
+}
+
+/** Graph and empty queue, applied by `initialState` so the stage shows the
+ *  problem at step 0. The generator does not emit these again. */
+export function structure(input: BfsInput): VizEvent[] {
+  return [
+    {
+      t: 'graph',
+      nodes: Array.from({ length: input.n }, (_, i) => ({ id: ids.node(i), label: String(i) })),
+      edges: input.edges.map((e) => ({ id: ids.edge(e.a, e.b), a: ids.node(e.a), b: ids.node(e.b) })),
+    },
+    { t: 'panel', panel: QUEUE, kind: 'queue' },
+  ];
 }

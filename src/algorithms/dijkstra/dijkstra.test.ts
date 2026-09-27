@@ -59,7 +59,10 @@ describe('dijkstra module', () => {
     expect(s1.graph?.edges.map((e) => e.id)).toEqual(['g:0-1', 'g:0-2', 'g:1-2', 'g:1-3', 'g:2-3']);
     expect(s1.panels.pq?.items).toEqual([{ id: 'q:0', key: 0, tie: 0, ref: 'n:0', label: '(0, 0)' }]);
     expect(s1.vars['dist:1']).toBe('∞');
-    expect(must(r.states[0]).graph).toBeNull();
+    // The graph and the empty queue are drawn from step 0, before any label.
+    expect(must(r.states[0]).graph?.edges.map((e) => e.id)).toEqual(['g:0-1', 'g:0-2', 'g:1-2', 'g:1-3', 'g:2-3']);
+    expect(must(r.states[0]).graph?.nodes.every((n) => n.text === null)).toBe(true);
+    expect(must(r.states[0]).panels.pq?.items).toEqual([]);
   });
 
   it('stale-entry preset: (4, 1) pops stale with skip + stale mark for one step, then settled again', () => {

@@ -43,9 +43,12 @@ describe('bfs module', () => {
   it('tree-like: dequeue, discover, skip visited, and the asks in their places', () => {
     const r = runModule(bfs, preset('tree-like'));
     expect(r.steps.map((s) => s.line)).toEqual([1, 3, 6, 6, 3, 5, 6, 6, 3, 5, 6, 6, 3, 5, 3, 5, 3, 5, 3, 5, 2]);
+    // The graph and the empty queue are in the initial state, so the stage
+    // shows the problem at step 0; the setup step only starts the search.
+    expect(must(r.states[0]).graph?.nodes).toHaveLength(bfs.presets.find((p) => p.id === 'tree-like')?.input.n ?? -1);
+    expect(must(r.states[0]).panels.queue).toEqual({ kind: 'queue', items: [] });
     const setup = must(r.steps[0]);
-    expect(setup.events.slice(1)).toEqual([
-      { t: 'panel', panel: 'queue', kind: 'queue' },
+    expect(setup.events).toEqual([
       { t: 'label', id: 'n:0', text: '0' },
       { t: 'mark', ref: { id: 'n:0' }, as: 'frontier' },
       { t: 'push', panel: 'queue', item: { id: 'q:0', ref: 'n:0', label: '0' } },

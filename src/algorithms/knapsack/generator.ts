@@ -56,15 +56,8 @@ export function* generate(input: KnapsackInput): Iterable<Step> {
   const dp = table(input);
   const at = (i: number, c: number): number => (dp[i] as number[])[c] as number;
 
-  const first: VizEvent[] = [
-    {
-      t: 'grid',
-      rows: n + 1,
-      cols: W + 1,
-      rowLabels: Array.from({ length: n + 1 }, (_, i) => rowLabel(input, i)),
-      colLabels: Array.from({ length: W + 1 }, (_, c) => String(c)),
-    },
-  ];
+  // The empty grid is in the initial state (see `structure`).
+  const first: VizEvent[] = [];
   for (let c = 0; c <= W; c++) first.push({ t: 'cell', r: 0, c, value: 0, deps: [] });
   yield { line: 1, events: first, note: 'Row 0 is all zeros: with no items to take, the best value is 0.', phase: 'fill' };
 
@@ -187,4 +180,18 @@ export function* generate(input: KnapsackInput): Iterable<Step> {
         : `${taken.length === 1 ? 'Item' : 'Items'} ${taken.join(', ')}: value ${best}, weight ${weight} of ${W}.`,
     phase: 'reconstruct',
   };
+}
+
+/** The empty grid, applied by `initialState` so the stage shows the table at
+ *  step 0. The generator does not emit it again. */
+export function structure(input: KnapsackInput): VizEvent[] {
+  return [
+    {
+      t: 'grid',
+      rows: input.w.length + 1,
+      cols: input.W + 1,
+      rowLabels: Array.from({ length: input.w.length + 1 }, (_, i) => rowLabel(input, i)),
+      colLabels: Array.from({ length: input.W + 1 }, (_, c) => String(c)),
+    },
+  ];
 }

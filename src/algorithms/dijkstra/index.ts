@@ -3,7 +3,8 @@ import { ids } from '@/engine/ids';
 import type { State } from '@/engine/state';
 import { emptyState } from '@/engine/state';
 import type { DijkstraInput } from './generator';
-import { INF, PQ, generate } from './generator';
+import { INF, PQ, generate, structure } from './generator';
+import { applyEvent } from '@/engine/reducer';
 import { code } from './code';
 import { MAX_NODES, decode, encode, presets, randomInput, referenceDistances, validate } from './input';
 
@@ -49,7 +50,8 @@ function result(final: State, input: DijkstraInput): number[] {
  *    except the node just popped (between its pop and its settle step). */
 export function invariantCheck(state: State, input: DijkstraInput): string | null {
   const g = state.graph;
-  if (!g) return null; // before setup
+  if (!g) return null;
+  if (!Object.keys(state.vars).some((k) => k.startsWith('dist:'))) return null; // graph drawn, setup not run yet
   const ref = referenceDistances(input);
   const label = new Map<string, number>();
   const settledMax = { v: -Infinity };
@@ -105,7 +107,7 @@ export const dijkstra: AlgorithmModule<DijkstraInput> = {
   pseudocode,
   code,
   invariant: { lazy: { name: 'Settled distances are final', sentence: 'A popped node with a fresh entry is done: nothing can shorten it.' } },
-  initialState: () => emptyState(),
+  initialState: (input) => structure(input).reduce(applyEvent, emptyState()),
   generate,
   reference,
   result,

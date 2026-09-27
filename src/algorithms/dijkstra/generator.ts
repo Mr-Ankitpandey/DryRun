@@ -82,15 +82,8 @@ export function* generate(input: DijkstraInput): Iterable<Step> {
     return seen;
   };
 
-  // ---- line 1: setup
-  const setup: VizEvent[] = [
-    {
-      t: 'graph',
-      nodes: Array.from({ length: n }, (_, i) => ({ id: node(i), label: String(i) })),
-      edges: input.edges.map((e) => ({ id: ids.edge(e.a, e.b), a: node(e.a), b: node(e.b), w: e.w })),
-    },
-    { t: 'panel', panel: PQ, kind: 'pq' },
-  ];
+  // ---- line 1: setup (the graph and the empty queue are in the initial state)
+  const setup: VizEvent[] = [];
   for (let v = 0; v < n; v++) {
     setup.push({ t: 'label', id: node(v), text: fmt(dist[v] as number) });
     setup.push({ t: 'var', name: distVar(v), value: v === s ? 0 : INF });
@@ -259,4 +252,17 @@ function orderAsk(queued: number[]): Ask {
     .map(node);
   if (byId.join() !== answer.join()) distractors.push({ answer: byId, kind: 'order', rule: 'The id only breaks ties between equal distances.' });
   return { kind: 'order', level: 'full', prompt: 'Pop order of the queued nodes from here, assuming no more pushes?', answer, pool, rule: RULE_ORDER, distractors };
+}
+
+/** Graph and empty queue, applied by `initialState` so the stage shows the
+ *  problem at step 0. The generator does not emit these again. */
+export function structure(input: DijkstraInput): VizEvent[] {
+  return [
+    {
+      t: 'graph',
+      nodes: Array.from({ length: input.n }, (_, i) => ({ id: ids.node(i), label: String(i) })),
+      edges: input.edges.map((e) => ({ id: ids.edge(e.a, e.b), a: ids.node(e.a), b: ids.node(e.b), w: e.w })),
+    },
+    { t: 'panel', panel: PQ, kind: 'pq' },
+  ];
 }

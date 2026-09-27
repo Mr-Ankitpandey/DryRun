@@ -3,7 +3,8 @@ import { ids } from '@/engine/ids';
 import type { State } from '@/engine/state';
 import { emptyState } from '@/engine/state';
 import type { BfsInput } from './generator';
-import { QUEUE, generate } from './generator';
+import { QUEUE, generate, structure } from './generator';
+import { applyEvent } from '@/engine/reducer';
 import { code } from './code';
 import { MAX_NODES, decode, encode, presets, randomInput, referenceDistances, validate } from './input';
 
@@ -95,7 +96,7 @@ export const bfs: AlgorithmModule<BfsInput> = {
   pseudocode,
   code,
   invariant: { queue: { name: 'Layers in order', sentence: 'Everything in the queue is at distance d or d + 1; layers come out in order.' } },
-  initialState: () => emptyState(),
+  initialState: (input) => structure(input).reduce(applyEvent, emptyState()),
   generate,
   reference,
   result,

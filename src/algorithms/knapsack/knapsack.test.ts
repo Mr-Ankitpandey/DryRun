@@ -69,10 +69,13 @@ describe('knapsack module', () => {
   it('classic: row 0, one write per cell with deps, probe on the last column, walk back', () => {
     const r = runModule(knapsack, preset('classic'));
     expect(r.steps).toHaveLength(42); // 1 + 4 × 8 cells + 4 probes + 4 walk + 1 final
+    // The empty grid is in the initial state; step 1 fills row 0.
+    const grid = must(r.states[0]).grid;
+    expect(grid && { rows: grid.rows, cols: grid.cols, rowLabels: grid.rowLabels, colLabels: grid.colLabels }).toEqual({ rows: 5, cols: 8, rowLabels: ['0', 'item 1 (1, 1)', 'item 2 (3, 4)', 'item 3 (4, 5)', 'item 4 (5, 7)'], colLabels: ['0', '1', '2', '3', '4', '5', '6', '7'] });
+    expect(grid?.cells).toEqual({});
     const row0 = must(r.steps[0]);
-    expect(row0.events[0]).toEqual({ t: 'grid', rows: 5, cols: 8, rowLabels: ['0', 'item 1 (1, 1)', 'item 2 (3, 4)', 'item 3 (4, 5)', 'item 4 (5, 7)'], colLabels: ['0', '1', '2', '3', '4', '5', '6', '7'] });
     expect(row0.events.filter((e) => e.t === 'cell')).toHaveLength(8);
-    expect(row0.events[1]).toEqual({ t: 'cell', r: 0, c: 0, value: 0, deps: [] });
+    expect(row0.events[0]).toEqual({ t: 'cell', r: 0, c: 0, value: 0, deps: [] });
 
     const noFit = writeOf(r.steps, 2, 1);
     expect(noFit.line).toBe(4);
