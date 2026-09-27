@@ -323,3 +323,14 @@ the final review, README and release.
 - 2026-09-25 — Lead fix during integration: on touch screens the Progress chart cleared
   its readout on `pointerleave`, which fires when a finger lifts; it now clears only
   for a mouse.
+- 2026-09-27 — Owner: deploy only after all features are complete. Wave 3 dispatched
+  (5 agents): WP-I polish + accessibility (axe-core) + performance, WP-J JS/Python/
+  C++/Java listings line-mapped to pseudocode (JS executed in tests; others when the
+  toolchain exists), WP-K Blind mode (guided asks, frozen stage between asks, hidden
+  steps revealed after answering), WP-L review targeted at the weakest mistake kind +
+  "practise this mistake" + settings for level/language, WP-M DFS and LCS.
+  Groundwork: `Level` gains 'blind', `Settings.language`, `CodeListing` module type,
+  `@axe-core/playwright` 4.13.0 (dev only).
+- 2026-09-27 — Planned wave 4 (needs renderer/schema work, so not parallel with WP-I):
+  binary heap with the heap-array ↔ tree linked view (signature moment 5), topological
+  sort (directed edges), union-find (forest).
