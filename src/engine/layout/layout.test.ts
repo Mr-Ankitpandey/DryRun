@@ -130,3 +130,24 @@ describe('computeLayout', () => {
     expect(rec.height).toBeGreaterThan(firstFrameY);
   });
 });
+
+describe('recursion layout without segments (dfs frames)', () => {
+  it('lays a forest out tidily: no two frames on a row overlap and all fit the width', async () => {
+    const { dfs } = await import('@/algorithms/dfs');
+    for (const p of dfs.presets) {
+      const r = run(dfs.initialState(p.input), dfs.generate(p.input), { maxSteps: dfs.meta.caps.maxSteps });
+      const lay = computeLayout(r, { width: 900 });
+      const rec = lay.recursion;
+      if (!rec) continue;
+      const nodes = Object.values(rec.pos);
+      for (const a of nodes) {
+        expect(a.x - a.w / 2).toBeGreaterThanOrEqual(0);
+        expect(a.x + a.w / 2).toBeLessThanOrEqual(900);
+        for (const b of nodes) {
+          if (a === b || a.y !== b.y) continue;
+          expect(Math.abs(a.x - b.x), p.id).toBeGreaterThanOrEqual((a.w + b.w) / 2);
+        }
+      }
+    }
+  });
+});
