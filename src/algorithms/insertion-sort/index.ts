@@ -4,6 +4,7 @@ import type { State } from '@/engine/state';
 import { arrayValues, emptyState, withArray } from '@/engine/state';
 import type { InsertionSortInput } from './generator';
 import { A, HOLD, generate } from './generator';
+import { code } from './code';
 import { MAX_SIZE, decode, encode, presets, randomInput, validate } from './input';
 
 export type { InsertionSortInput } from './generator';
@@ -96,6 +97,7 @@ export const insertionSort: AlgorithmModule<InsertionSortInput> = {
     variants: [{ id: 'classic', title: 'Shift with a lifted key' }],
   },
   pseudocode,
+  code,
   invariant: { classic: { name: 'Sorted prefix', sentence: 'Everything left of i is sorted; key slides left until it is not smaller.' } },
   initialState: (input) => withArray(emptyState(), A, input.a),
   generate,

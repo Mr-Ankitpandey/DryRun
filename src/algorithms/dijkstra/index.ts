@@ -4,6 +4,7 @@ import type { State } from '@/engine/state';
 import { emptyState } from '@/engine/state';
 import type { DijkstraInput } from './generator';
 import { INF, PQ, generate } from './generator';
+import { code } from './code';
 import { MAX_NODES, decode, encode, presets, randomInput, referenceDistances, validate } from './input';
 
 export type { DijkstraEdge, DijkstraInput } from './generator';
@@ -102,6 +103,7 @@ export const dijkstra: AlgorithmModule<DijkstraInput> = {
     variants: [{ id: 'lazy', title: 'Binary heap, lazy deletion' }],
   },
   pseudocode,
+  code,
   invariant: { lazy: { name: 'Settled distances are final', sentence: 'A popped node with a fresh entry is done: nothing can shorten it.' } },
   initialState: () => emptyState(),
   generate,

@@ -3,6 +3,7 @@ import type { State } from '@/engine/state';
 import { withArray, emptyState } from '@/engine/state';
 import type { BinarySearchInput } from './generator';
 import { generate } from './generator';
+import { code } from './code';
 import { MAX_SIZE, decode, encode, presets, randomInput, validate } from './input';
 
 export type { BinarySearchInput } from './generator';
@@ -78,6 +79,7 @@ export const binarySearch: AlgorithmModule<BinarySearchInput> = {
     ],
   },
   pseudocode,
+  code,
   invariant: {
     classic: { name: 'Search range', sentence: 'If x is present, it is inside [lo, hi].' },
     lower: { name: 'Search range', sentence: 'The first index with a[i] ≥ x is inside [lo, hi].' },

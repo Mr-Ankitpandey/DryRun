@@ -1,0 +1,97 @@
+/** Real-language listings for top-down merge sort, line-mapped to the
+ *  pseudocode in index.ts. The caller passes an aux array as long as a, as the
+ *  pseudocode's aux[lo..hi] indexing assumes. Display only; src/algorithms/_code
+ *  runs them against `reference`. C++ defines merge first so it is declared
+ *  before mergeSort calls it. */
+
+import { listing } from '@/algorithms/_code/listing';
+import type { CodeListing, RealLanguage } from '@/algorithms/types';
+
+const N = 12;
+
+export const code: Record<string, Partial<Record<RealLanguage, CodeListing>>> = {
+  topdown: {
+    js: listing(N, [
+      ['function mergeSort(a, aux, lo, hi) {', 1],
+      ['  if (hi - lo < 1) return;', 2],
+      ['  const mid = lo + Math.floor((hi - lo) / 2);', 3],
+      ['  mergeSort(a, aux, lo, mid);', 4],
+      ['  mergeSort(a, aux, mid + 1, hi);', 4],
+      ['  merge(a, aux, lo, mid, hi);', 5],
+      ['}'],
+      [''],
+      ['function merge(a, aux, lo, mid, hi) {', 6],
+      ['  let i = lo, j = mid + 1, k = lo;', 7],
+      ['  while (i <= mid && j <= hi) {', 8],
+      ['    if (a[i] <= a[j]) aux[k++] = a[i++];', 9],
+      ['    else aux[k++] = a[j++];', 10],
+      ['  }'],
+      ['  while (i <= mid) aux[k++] = a[i++];', 11],
+      ['  while (j <= hi) aux[k++] = a[j++];', 11],
+      ['  for (let t = lo; t <= hi; t++) a[t] = aux[t];', 12],
+      ['}'],
+    ]),
+    python: listing(N, [
+      ['def merge_sort(a, aux, lo, hi):', 1],
+      ['    if hi - lo < 1:', 2],
+      ['        return', 2],
+      ['    mid = lo + (hi - lo) // 2', 3],
+      ['    merge_sort(a, aux, lo, mid)', 4],
+      ['    merge_sort(a, aux, mid + 1, hi)', 4],
+      ['    merge(a, aux, lo, mid, hi)', 5],
+      [''],
+      ['def merge(a, aux, lo, mid, hi):', 6],
+      ['    i, j, k = lo, mid + 1, lo', 7],
+      ['    while i <= mid and j <= hi:', 8],
+      ['        if a[i] <= a[j]:', 9],
+      ['            aux[k] = a[i]', 9],
+      ['            i += 1', 9],
+      ['        else:', 10],
+      ['            aux[k] = a[j]', 10],
+      ['            j += 1', 10],
+      ['        k += 1', [9, 10]],
+      ['    aux[k:hi + 1] = a[i:mid + 1] + a[j:hi + 1]', 11],
+      ['    a[lo:hi + 1] = aux[lo:hi + 1]', 12],
+    ]),
+    cpp: listing(N, [
+      ['void merge(vector<int>& a, vector<int>& aux, int lo, int mid, int hi) {', 6],
+      ['    int i = lo, j = mid + 1, k = lo;', 7],
+      ['    while (i <= mid && j <= hi) {', 8],
+      ['        if (a[i] <= a[j]) aux[k++] = a[i++];', 9],
+      ['        else aux[k++] = a[j++];', 10],
+      ['    }'],
+      ['    while (i <= mid) aux[k++] = a[i++];', 11],
+      ['    while (j <= hi) aux[k++] = a[j++];', 11],
+      ['    for (int t = lo; t <= hi; t++) a[t] = aux[t];', 12],
+      ['}'],
+      [''],
+      ['void mergeSort(vector<int>& a, vector<int>& aux, int lo, int hi) {', 1],
+      ['    if (hi - lo < 1) return;', 2],
+      ['    int mid = lo + (hi - lo) / 2;', 3],
+      ['    mergeSort(a, aux, lo, mid);', 4],
+      ['    mergeSort(a, aux, mid + 1, hi);', 4],
+      ['    merge(a, aux, lo, mid, hi);', 5],
+      ['}'],
+    ]),
+    java: listing(N, [
+      ['static void mergeSort(int[] a, int[] aux, int lo, int hi) {', 1],
+      ['    if (hi - lo < 1) return;', 2],
+      ['    int mid = lo + (hi - lo) / 2;', 3],
+      ['    mergeSort(a, aux, lo, mid);', 4],
+      ['    mergeSort(a, aux, mid + 1, hi);', 4],
+      ['    merge(a, aux, lo, mid, hi);', 5],
+      ['}'],
+      [''],
+      ['static void merge(int[] a, int[] aux, int lo, int mid, int hi) {', 6],
+      ['    int i = lo, j = mid + 1, k = lo;', 7],
+      ['    while (i <= mid && j <= hi) {', 8],
+      ['        if (a[i] <= a[j]) aux[k++] = a[i++];', 9],
+      ['        else aux[k++] = a[j++];', 10],
+      ['    }'],
+      ['    while (i <= mid) aux[k++] = a[i++];', 11],
+      ['    while (j <= hi) aux[k++] = a[j++];', 11],
+      ['    for (int t = lo; t <= hi; t++) a[t] = aux[t];', 12],
+      ['}'],
+    ]),
+  },
+};

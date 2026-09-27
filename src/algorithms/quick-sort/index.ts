@@ -3,6 +3,7 @@ import type { State } from '@/engine/state';
 import { arrayValues, emptyState, withArray } from '@/engine/state';
 import type { QuickSortInput } from './generator';
 import { generate } from './generator';
+import { code } from './code';
 import { MAX_SIZE, decode, encode, presets, randomInput, validate } from './input';
 
 export type { QuickSortInput } from './generator';
@@ -70,6 +71,7 @@ export const quickSort: AlgorithmModule<QuickSortInput> = {
     variants: [{ id: 'lomuto', title: 'Lomuto partition' }],
   },
   pseudocode,
+  code,
   invariant: { lomuto: { name: 'Partition regions', sentence: 'Left of i + 1 is < pivot; between i + 1 and j is ≥ pivot; j onward is unscanned.' } },
   initialState: (input) => withArray(emptyState(), 'a', input.a),
   generate,

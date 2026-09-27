@@ -1,0 +1,136 @@
+/** Real-language listings for LCS: fill the table row by row, then walk back
+ *  from (m, n): diagonal on a match, else toward the larger of up and left, up
+ *  on a tie (the same rule as the generator). `map[p - 1]` lists the listing
+ *  lines (1-based) for pseudocode line p. Every listing is executed against
+ *  `reference` in lcs/code.test.ts. */
+
+import type { CodeListing, RealLanguage } from '@/algorithms/types';
+
+const js: CodeListing = {
+  lines: [
+    'function lcs(a, b) {',
+    '  const m = a.length, n = b.length;',
+    '  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));',
+    '  for (let i = 1; i <= m; i++) {',
+    '    for (let j = 1; j <= n; j++) {',
+    '      if (a[i - 1] === b[j - 1]) {',
+    '        dp[i][j] = dp[i - 1][j - 1] + 1;',
+    '      } else {',
+    '        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);',
+    '      }',
+    '    }',
+    '  }',
+    "  let i = m, j = n, out = '';",
+    '  while (i > 0 && j > 0) {',
+    '    if (a[i - 1] === b[j - 1]) {',
+    '      out = a[i - 1] + out;',
+    '      i--;',
+    '      j--;',
+    '    } else if (dp[i - 1][j] >= dp[i][j - 1]) {',
+    '      i--;',
+    '    } else {',
+    '      j--;',
+    '    }',
+    '  }',
+    '  return { length: dp[m][n], lcs: out };',
+    '}',
+  ],
+  map: [[2, 3], [4], [5], [6, 7], [8, 9], [13, 14, 15, 16, 17, 18, 19, 20, 21, 22]],
+};
+
+const python: CodeListing = {
+  lines: [
+    'def lcs(a, b):',
+    '    m, n = len(a), len(b)',
+    '    dp = [[0] * (n + 1) for _ in range(m + 1)]',
+    '    for i in range(1, m + 1):',
+    '        for j in range(1, n + 1):',
+    '            if a[i - 1] == b[j - 1]:',
+    '                dp[i][j] = dp[i - 1][j - 1] + 1',
+    '            else:',
+    '                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])',
+    '    i, j, out = m, n, []',
+    '    while i > 0 and j > 0:',
+    '        if a[i - 1] == b[j - 1]:',
+    '            out.append(a[i - 1])',
+    '            i -= 1',
+    '            j -= 1',
+    '        elif dp[i - 1][j] >= dp[i][j - 1]:',
+    '            i -= 1',
+    '        else:',
+    '            j -= 1',
+    "    return dp[m][n], ''.join(reversed(out))",
+  ],
+  map: [[2, 3], [4], [5], [6, 7], [8, 9], [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]],
+};
+
+const cpp: CodeListing = {
+  lines: [
+    'std::string lcs(const std::string& a, const std::string& b) {',
+    '    int m = a.size(), n = b.size();',
+    '    std::vector<std::vector<int>> dp(m + 1, std::vector<int>(n + 1, 0));',
+    '    for (int i = 1; i <= m; i++) {',
+    '        for (int j = 1; j <= n; j++) {',
+    '            if (a[i - 1] == b[j - 1]) {',
+    '                dp[i][j] = dp[i - 1][j - 1] + 1;',
+    '            } else {',
+    '                dp[i][j] = std::max(dp[i - 1][j], dp[i][j - 1]);',
+    '            }',
+    '        }',
+    '    }',
+    '    std::string out;',
+    '    int i = m, j = n;',
+    '    while (i > 0 && j > 0) {',
+    '        if (a[i - 1] == b[j - 1]) {',
+    '            out += a[i - 1];',
+    '            i--;',
+    '            j--;',
+    '        } else if (dp[i - 1][j] >= dp[i][j - 1]) {',
+    '            i--;',
+    '        } else {',
+    '            j--;',
+    '        }',
+    '    }',
+    '    std::reverse(out.begin(), out.end());',
+    '    return out;  // its length is dp[m][n]',
+    '}',
+  ],
+  map: [[1, 2, 3], [4], [5], [6, 7], [8, 9], [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 26]],
+};
+
+const java: CodeListing = {
+  lines: [
+    'static String lcs(String a, String b) {',
+    '    int m = a.length(), n = b.length();',
+    '    int[][] dp = new int[m + 1][n + 1];',
+    '    for (int i = 1; i <= m; i++) {',
+    '        for (int j = 1; j <= n; j++) {',
+    '            if (a.charAt(i - 1) == b.charAt(j - 1)) {',
+    '                dp[i][j] = dp[i - 1][j - 1] + 1;',
+    '            } else {',
+    '                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);',
+    '            }',
+    '        }',
+    '    }',
+    '    StringBuilder out = new StringBuilder();',
+    '    int i = m, j = n;',
+    '    while (i > 0 && j > 0) {',
+    '        if (a.charAt(i - 1) == b.charAt(j - 1)) {',
+    '            out.append(a.charAt(i - 1));',
+    '            i--;',
+    '            j--;',
+    '        } else if (dp[i - 1][j] >= dp[i][j - 1]) {',
+    '            i--;',
+    '        } else {',
+    '            j--;',
+    '        }',
+    '    }',
+    '    return out.reverse().toString();  // its length is dp[m][n]',
+    '}',
+  ],
+  map: [[2, 3], [4], [5], [6, 7], [8, 9], [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 26]],
+};
+
+export const code: Record<string, Partial<Record<RealLanguage, CodeListing>>> = {
+  bottomup: { js, python, cpp, java },
+};

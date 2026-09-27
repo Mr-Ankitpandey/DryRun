@@ -4,6 +4,7 @@ import type { State } from '@/engine/state';
 import { emptyState } from '@/engine/state';
 import type { BfsInput } from './generator';
 import { QUEUE, generate } from './generator';
+import { code } from './code';
 import { MAX_NODES, decode, encode, presets, randomInput, referenceDistances, validate } from './input';
 
 export type { BfsEdge, BfsInput } from './generator';
@@ -92,6 +93,7 @@ export const bfs: AlgorithmModule<BfsInput> = {
     variants: [{ id: 'queue', title: 'Queue, ascending neighbours' }],
   },
   pseudocode,
+  code,
   invariant: { queue: { name: 'Layers in order', sentence: 'Everything in the queue is at distance d or d + 1; layers come out in order.' } },
   initialState: () => emptyState(),
   generate,

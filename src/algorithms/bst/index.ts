@@ -4,6 +4,7 @@ import type { State, TreeNode } from '@/engine/state';
 import { emptyState } from '@/engine/state';
 import type { BstInput } from './generator';
 import { generate } from './generator';
+import { code } from './code';
 import type { PlainNode } from './input';
 import { MAX_SIZE, decode, encode, plainBuild, presets, randomInput, validate } from './input';
 
@@ -185,6 +186,7 @@ export const bst: AlgorithmModule<BstInput> = {
     ],
   },
   pseudocode,
+  code,
   invariant: {
     insert: { name: 'BST property', sentence: 'Everything left of a node is smaller; everything right is larger.' },
     search: { name: 'BST property', sentence: 'Everything left of a node is smaller; everything right is larger.' },

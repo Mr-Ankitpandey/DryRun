@@ -63,6 +63,16 @@ export const MISTAKE_TARGETS: Table = {
     dependency: { target: 'tie', has: 'Here taking and skipping an item give the same value on the way back' },
     comparison: { target: 'partial', has: 'These items weigh more than the bag holds, so not every item fits' },
   },
+  dfs: {
+    order: { target: 'back-edge', has: 'This graph has a cycle, so dfs meets a node that is still on the call stack' },
+    boundary: { target: 'deep', has: 'In this graph dfs goes at least five calls deep before it returns' },
+    'base-case': { target: 'forest', has: 'This graph falls into separate pieces, so dfs starts again from a new node' },
+  },
+  lcs: {
+    comparison: { target: 'tie', has: 'In these strings the walk back meets a tie between up and left' },
+    dependency: { target: 'long', has: 'These strings share a subsequence of at least three letters' },
+    boundary: { target: 'long', has: 'These strings share a subsequence of at least three letters' },
+  },
 };
 
 /** How a kind reads after "recently you stumbled most on …". */

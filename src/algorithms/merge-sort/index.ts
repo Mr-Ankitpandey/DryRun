@@ -4,6 +4,7 @@ import type { State } from '@/engine/state';
 import { arrayValues, emptyState, topFrame, withArray } from '@/engine/state';
 import type { MergeSortInput } from './generator';
 import { A, AUX, generate } from './generator';
+import { code } from './code';
 import { MAX_SIZE, decode, encode, presets, randomInput, validate } from './input';
 
 export type { MergeSortInput } from './generator';
@@ -134,6 +135,7 @@ export const mergeSort: AlgorithmModule<MergeSortInput> = {
     variants: [{ id: 'topdown', title: 'Top-down, stable' }],
   },
   pseudocode,
+  code,
   invariant: { topdown: { name: 'Sorted runs', sentence: 'Both halves are sorted; take the smaller front, left first on ties.' } },
   initialState: (input) => withArray(emptyState(), A, input.a),
   generate,

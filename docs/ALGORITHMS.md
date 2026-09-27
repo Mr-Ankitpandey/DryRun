@@ -265,7 +265,7 @@ pop; not knowing what to do with the stale entry.
 Why knapsack: it is the canonical DP for this audience, its grid reads naturally
 (items × capacity), and its signature bug (reading `dp[i][c − w]` from the *current*
 row, which silently computes the unbounded knapsack) is a precise mental-model error
-that DryRun can name. LCS remains the next DP module to add after launch.
+that DryRun can name. LCS is §10.
 
 Renderer: DP grid (rows = items 0..n, cols = capacity 0..W) with dependency arrows;
 item list on the side. Invariant: computed cells are final; fill order is row-major;
@@ -295,6 +295,70 @@ Presets: `classic` (4 items, W=7), `zero-capacity`, `one-item`, `item-too-heavy`
 Steps ≤ 80.
 Pitfall: current-row read (unbounded), `<` instead of `<=` in the fit test, wrong
 reconstruction direction.
+
+## 9. Depth-first search (recursive, discovery/finish times)
+
+Renderer: graph + call stack + d/f labels under the nodes. Invariant: "Discovery and
+finish times nest: a node started after u finishes before u." Tie-break: the outer
+loop starts at every unvisited node in ascending id (a DFS forest, no start node);
+neighbours are tried in ascending id. The graph is in the initial state.
+
+```
+1  time = 0
+2  for s in nodes, ascending:
+3      if s not visited: dfs(s)
+4  dfs(u):
+5      visited[u] = true; d[u] = ++time
+6      for v in neighbours(u), ascending:
+7          if v not visited:
+8              dfs(v)
+9      f[u] = ++time
+```
+Events: `call`/`return` frames `dfs(u)` with args `{u}`; the call step marks u
+`active`, the caller back to `visited`, and the tree edge; the discovery step sets
+`var time` and `label` "d/"; each already-visited neighbour is one `read` step
+("tree edge" for the parent, "back edge" for an ancestor higher up, "already finished"
+for a finished descendant); the finish step sets `label` "d/f", `mark settled`,
+`return`. Runs of already-visited outer-loop nodes are one `read` step.
+
+Asks: pick G "Which node does dfs visit next?" (smallest unvisited neighbour or next
+outer start; distractors largest-id neighbour → order, breadth-first choice → order,
+returning early → base-case); value G "d[u]?" (→ boundary); value F "f[u]?"
+(→ boundary); choice F "Does dfs(u) return now?" (→ base-case); order F "Call stack
+from bottom to top?" on back-edge reads (reversed / id order → order).
+Presets: tree, cycle, disconnected, line, complete-4, star. Targets: forest,
+connected, deep, back-edge. Nodes ≤ 10, edges ≤ 16. Steps ≤ 70 (exact worst case 62).
+Pitfalls: treating a visited neighbour as a base case; going breadth first; ticking
+the clock only on discovery; thinking f[u] = d[u] + 1.
+
+## 10. Longest common subsequence
+
+Renderer: DP grid (rows = prefixes of a, columns = prefixes of b) with dependency
+arrows. Invariant: "Every filled cell is the LCS length of the two prefixes." The
+empty grid is in the initial state.
+
+```
+1  for i in 0..m: dp[i][0] = 0;  for j in 0..n: dp[0][j] = 0
+2  for i = 1..m:
+3      for j = 1..n:
+4          if a[i-1] == b[j-1]: dp[i][j] = dp[i-1][j-1] + 1
+5          else: dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+6  reconstruct from (m, n): diagonal on a match, else move to the larger of up/left (up on ties)
+```
+Events: the border is one step; each cell is one step with `var a[i-1]`, `var b[j-1]`,
+their `compare`, `cell` with deps, the new cell `active`. The walk: one step per cell
+with `read`, `mark done` on match cells (the letter joins `var lcs`), `mark visited`
+on the others.
+
+Asks: value G "dp[i][j]?" (every cell; forgot +1 / +1 on a mismatch / min → comparison,
+wrong neighbour → dependency); choice G "Do a[i−1] and b[j−1] match?" (→ boundary);
+pick F "Which cell does it read?" (→ comparison / dependency); choice G "Move
+diagonal, up or left?" on every walk step.
+Presets: classic (ABCBDAB / BDCABA → BCBA), empty-string, identical,
+no-common-letter, one-letter, tie-heavy. Targets: tie, long, disjoint. Strings of
+A–Z, 0–7 letters. Steps ≤ 90 (worst case 78).
+Pitfalls: comparing a[i] with b[j]; +1 on a mismatch; min instead of max; taking
+left on a tie during the walk.
 
 ## Cross-cutting rules
 

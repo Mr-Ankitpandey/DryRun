@@ -82,6 +82,22 @@ export const registry: RegistryEntry[] = [
     minutes: 6,
     load: () => import('./knapsack').then((m) => erase(m.knapsack)),
   },
+  {
+    id: 'dfs',
+    title: 'Depth-first search',
+    family: 'graph',
+    practice: 'Which node dfs visits next, each discovery and finish time, and when a call returns.',
+    minutes: 5,
+    load: () => import('./dfs').then((m) => erase(m.dfs)),
+  },
+  {
+    id: 'lcs',
+    title: 'Longest common subsequence',
+    family: 'dp',
+    practice: 'Whether the letters match, the value of each cell, which cell it reads, and the walk back.',
+    minutes: 7,
+    load: () => import('./lcs').then((m) => erase(m.lcs)),
+  },
 ];
 
 export function findEntry(id: string): RegistryEntry | undefined {

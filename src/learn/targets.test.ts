@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { registry } from '@/algorithms/registry';
+import type { DfsInput } from '@/algorithms/dfs';
+import { hasBackEdge, maxDepth, treeCount } from '@/algorithms/dfs/input';
+import type { LcsInput } from '@/algorithms/lcs';
+import { reference as lcsReference } from '@/algorithms/lcs';
+import { walkHasTie } from '@/algorithms/lcs/input';
 import type { AlgorithmModule } from '@/algorithms/types';
 import type { BfsInput } from '@/algorithms/bfs/generator';
 import { maxQueue, referenceDistances as bfsDistances } from '@/algorithms/bfs/input';
@@ -62,6 +67,11 @@ const CASE_CHECKS: Record<string, (input: unknown, steps: readonly Step[]) => bo
   'bfs:wide': (i) => maxQueue(i as BfsInput) >= 3,
   'bfs:connected': (i) => bfsDistances(i as BfsInput).every((d) => d !== null),
   'knapsack:tie': (i) => hasTie(i as KnapsackInput),
+  'dfs:back-edge': (i) => hasBackEdge(i as DfsInput),
+  'dfs:deep': (i) => maxDepth(i as DfsInput) >= 5,
+  'dfs:forest': (i) => treeCount(i as DfsInput) >= 2,
+  'lcs:tie': (i) => walkHasTie(i as LcsInput),
+  'lcs:long': (i) => lcsReference(i as LcsInput).length >= 3,
   'knapsack:partial': (i) => {
     const k = i as KnapsackInput;
     return k.w.reduce((s, x) => s + x, 0) > k.W;
@@ -84,11 +94,11 @@ const pairs = Object.entries(MISTAKE_TARGETS).flatMap(([algorithm, kinds]) =>
 );
 
 describe('targets table', () => {
-  it('covers the eight launch algorithms, and only registered ones', () => {
+  it('covers every algorithm with targetable mistakes, and only registered ones', () => {
     const ids = registry.map((e) => e.id);
     for (const id of Object.keys(MISTAKE_TARGETS)) expect(ids).toContain(id);
     expect(Object.keys(MISTAKE_TARGETS).sort()).toEqual(
-      ['bfs', 'binary-search', 'bst', 'dijkstra', 'insertion-sort', 'knapsack', 'merge-sort', 'quick-sort'].sort(),
+      ['bfs', 'binary-search', 'bst', 'dfs', 'dijkstra', 'insertion-sort', 'knapsack', 'lcs', 'merge-sort', 'quick-sort'].sort(),
     );
   });
 

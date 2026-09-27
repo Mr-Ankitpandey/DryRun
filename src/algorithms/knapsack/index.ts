@@ -4,6 +4,7 @@ import type { State } from '@/engine/state';
 import { emptyState } from '@/engine/state';
 import type { KnapsackInput } from './generator';
 import { generate, table } from './generator';
+import { code } from './code';
 import { MAX_ITEMS, decode, encode, presets, randomInput, validate } from './input';
 
 export type { KnapsackInput } from './generator';
@@ -132,6 +133,7 @@ export const knapsack: AlgorithmModule<KnapsackInput> = {
     variants: [{ id: 'bottomup', title: 'Bottom-up table' }],
   },
   pseudocode,
+  code,
   invariant: { bottomup: { name: 'Row above only', sentence: 'dp[i][c] uses only the row above.' } },
   initialState: () => emptyState(),
   generate,
