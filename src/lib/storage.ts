@@ -10,7 +10,7 @@ export const CURRENT_VERSION = 1 as const;
 export type Theme = 'system' | 'light' | 'dark';
 export type MotionPref = 'system' | 'reduced';
 /** Trace difficulty. 'blind' keeps the stage frozen between asks (the learner
- *  runs the hidden steps in their head); it uses the same asks as 'full'. */
+ *  runs the hidden steps in their head); it uses the Guided asks. */
 export type Level = 'guided' | 'full' | 'blind';
 
 /** Code shown next to the trace. 'pseudo' is always available. */

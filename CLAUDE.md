@@ -22,6 +22,8 @@ Practical consequences:
 - Package caches point inside the project: `npm --cache ./.cache/npm ...`.
   Playwright browsers install to `./.cache/ms-playwright` via `PLAYWRIGHT_BROWSERS_PATH`.
 - Temporary files go in `./.scratch/` (git-ignored), not `/tmp`.
+- Never run `npx <tool>` for a tool that is not in `node_modules` (npx would
+  download or reuse a cache under `~/.npm`, outside the project).
 - Never run `git init`, commit, push or deploy unless the owner asked in this session.
 
 ## Working agreement

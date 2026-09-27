@@ -53,7 +53,7 @@ learner has never seen. Watching is only the fallback.
 
 ### After launch (in this order)
 
-1. Blind mode.
+1. ~~Blind mode~~ (built in wave 3).
 2. JS / Python / C++ / Java code display with line maps.
 3. Review sessions that target the learner's weakest mistake kind.
 4. More algorithms (DFS, topological sort, heap ops, union-find, LCS).
@@ -343,3 +343,12 @@ the final review, README and release.
   for Dijkstra, BFS, knapsack, DFS, LCS so step 0 is never blank; recursion frames
   without lo/hi use a tidy width-fitted tree layout; DFS/LCS setup lines map to
   pseudocode line 1.
+- 2026-09-27 — Accepted WP-K (Blind mode). Blind uses the Guided asks; the stage,
+  invariant values and code highlight freeze at the previous answer (moved forward
+  only past setup so the first question has something to show); hidden steps replay
+  at 2× after an answer, skippable. "Where does X land?" picks in Blind are graded by
+  slot, other picks by identity. Hidden steps between asks: quick sort up to 25,
+  merge sort 18, BFS 12; knapsack/BST/insertion sort 0–2 (their guided asks are dense).
+- 2026-09-27 — Agents must not run `npx <tool>` for tools missing from node_modules
+  (two agents ran `npx prettier`, which resolves through ~/.npm/_npx outside the
+  project). Added to CLAUDE.md.
