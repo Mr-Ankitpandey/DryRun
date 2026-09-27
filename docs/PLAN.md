@@ -334,3 +334,12 @@ the final review, README and release.
 - 2026-09-27 — Planned wave 4 (needs renderer/schema work, so not parallel with WP-I):
   binary heap with the heap-array ↔ tree linked view (signature moment 5), topological
   sort (directed edges), union-find (forest).
+- 2026-09-27 — Accepted WP-L (targeted review: src/learn/targets.ts maps each
+  (algorithm, mistake kind) to a randomInput target, chosen by measured coverage),
+  WP-J (44 listings; all four languages executed against the reference on 300+
+  inputs per variant; python3 3.9, Apple clang 21, OpenJDK 17 present) and WP-M
+  (DFS with d/f times, LCS; 10 algorithms registered).
+- 2026-09-27 — Lead fixes: structure (graph/queue/grid) now lives in `initialState`
+  for Dijkstra, BFS, knapsack, DFS, LCS so step 0 is never blank; recursion frames
+  without lo/hi use a tidy width-fitted tree layout; DFS/LCS setup lines map to
+  pseudocode line 1.
