@@ -4,7 +4,7 @@
 
 import { useLocation } from 'wouter';
 import type { AlgorithmModule } from '@/algorithms/types';
-import type { Level } from '@/trace/asks';
+import type { Level } from '@/lib/storage';
 import type { Session } from '@/trace/session';
 import { correctCount } from '@/trace/session';
 import { traceUrl } from '@/lib/url';

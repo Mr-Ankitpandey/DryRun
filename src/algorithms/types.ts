@@ -32,9 +32,22 @@ export interface Preset<I> {
 
 export type ValidationResult<I> = { ok: true; input: I } | { ok: false; error: string };
 
+/** Real-language listing shown next to the pseudocode (display only, never run).
+ *  `map[p - 1]` lists the 1-based lines of `lines` that pseudocode line `p`
+ *  corresponds to; an empty list means that pseudocode line has no direct
+ *  counterpart (the view then keeps the previous highlight). */
+export interface CodeListing {
+  lines: string[];
+  map: number[][];
+}
+
+export type RealLanguage = 'js' | 'python' | 'cpp' | 'java';
+
 export interface AlgorithmModule<I> {
   meta: AlgorithmMeta;
   pseudocode: Record<string, string[]>; // by variant id; 1-based lines = index + 1
+  /** Listings by variant id, then language. Optional per language. */
+  code?: Record<string, Partial<Record<RealLanguage, CodeListing>>>;
   invariant: Record<string, { name: string; sentence: string }>; // by variant id
   initialState(input: I): State;
   generate(input: I): Iterable<Step>;

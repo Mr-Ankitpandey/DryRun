@@ -9,12 +9,19 @@ export const CURRENT_VERSION = 1 as const;
 
 export type Theme = 'system' | 'light' | 'dark';
 export type MotionPref = 'system' | 'reduced';
-export type Level = 'guided' | 'full';
+/** Trace difficulty. 'blind' keeps the stage frozen between asks (the learner
+ *  runs the hidden steps in their head); it uses the same asks as 'full'. */
+export type Level = 'guided' | 'full' | 'blind';
+
+/** Code shown next to the trace. 'pseudo' is always available. */
+export type CodeLanguage = 'pseudo' | 'js' | 'python' | 'cpp' | 'java';
+export const CODE_LANGUAGES: readonly CodeLanguage[] = ['pseudo', 'js', 'python', 'cpp', 'java'];
 
 export interface Settings {
   theme: Theme;
   motion: MotionPref;
   level: Level;
+  language: CodeLanguage;
 }
 
 export interface SessionRecord {
@@ -71,7 +78,7 @@ export const MAX_MISTAKES = 2000;
 export function defaultStore(): Store {
   return {
     version: CURRENT_VERSION,
-    settings: { theme: 'system', motion: 'system', level: 'guided' },
+    settings: { theme: 'system', motion: 'system', level: 'guided', language: 'pseudo' },
     meta: { firstSeen: null, lastSeen: null },
     sessions: [],
     mistakes: [],
@@ -143,7 +150,8 @@ export function migrate(raw: unknown): Store | null {
   base.settings = {
     theme: theme === 'light' || theme === 'dark' ? theme : 'system',
     motion: motion === 'reduced' ? 'reduced' : 'system',
-    level: level === 'full' ? 'full' : 'guided',
+    level: level === 'full' || level === 'blind' ? level : 'guided',
+    language: CODE_LANGUAGES.includes(settings.language as CodeLanguage) ? (settings.language as CodeLanguage) : 'pseudo',
   };
   const meta = isRecord(raw.meta) ? raw.meta : {};
   base.meta = {
@@ -173,7 +181,7 @@ function isSession(v: unknown): v is SessionRecord {
     typeof v.variant === 'string' &&
     typeof v.seed === 'string' &&
     typeof v.input === 'string' &&
-    (v.level === 'guided' || v.level === 'full') &&
+    (v.level === 'guided' || v.level === 'full' || v.level === 'blind') &&
     typeof v.asked === 'number' &&
     typeof v.correct === 'number' &&
     typeof v.startedAt === 'number' &&

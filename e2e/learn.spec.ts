@@ -73,7 +73,7 @@ function seededStore(now: number): Store {
   };
   return {
     version: 1,
-    settings: { theme: 'system', motion: 'system', level: 'guided' },
+    settings: { theme: 'system', motion: 'system', level: 'guided', language: 'pseudo' },
     meta: { firstSeen: now - 28 * DAY, lastSeen: now - 2 * DAY },
     sessions,
     mistakes,
@@ -82,7 +82,7 @@ function seededStore(now: number): Store {
 }
 
 function emptyStore(): Store {
-  return { version: 1, settings: { theme: 'system', motion: 'system', level: 'guided' }, meta: { firstSeen: null, lastSeen: null }, sessions: [], mistakes: [], review: {} };
+  return { version: 1, settings: { theme: 'system', motion: 'system', level: 'guided', language: 'pseudo' }, meta: { firstSeen: null, lastSeen: null }, sessions: [], mistakes: [], review: {} };
 }
 
 /** Seeds localStorage before the app boots, once per tab; collects console errors. */

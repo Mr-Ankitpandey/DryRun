@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useParams, useSearch } from 'wouter';
 import { findEntry } from '@/algorithms/registry';
 import type { AlgorithmModule } from '@/algorithms/types';
-import type { Level } from '@/trace/asks';
+import type { Level } from '@/lib/storage';
 import { parseQuery, traceUrl } from '@/lib/url';
 import { AppShell } from '@/ui/AppShell';
 import { Button } from '@/ui/Button';
@@ -97,7 +97,7 @@ function TraceScreen({ title, module }: { title: string; module: AlgorithmModule
   const preset = module.presets[0];
   const input = decoded ?? preset?.input ?? null;
   const mode: 'trace' | 'watch' = q.mode === 'watch' ? 'watch' : 'trace';
-  const level: Level = q.level === 'full' || q.level === 'guided' ? q.level : store.settings.level;
+  const level: Level = q.level === 'full' || q.level === 'guided' || q.level === 'blind' ? q.level : store.settings.level;
   if (input === null) return null;
   const seed = q.seed && /^[\w-]{1,32}$/.test(q.seed) ? q.seed : derivedSeed(module.meta.id, module, input);
   const matching = module.presets.find((p) => JSON.stringify(p.input) === JSON.stringify(input));

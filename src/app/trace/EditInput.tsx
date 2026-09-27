@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { AlgorithmModule } from '@/algorithms/types';
-import type { Level } from '@/trace/asks';
+import type { Level } from '@/lib/storage';
 import { traceUrl } from '@/lib/url';
 import { Button } from '@/ui/Button';
 import { Segmented } from '@/ui/Segmented';

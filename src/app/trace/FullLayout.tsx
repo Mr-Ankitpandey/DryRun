@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { AlgorithmModule } from '@/algorithms/types';
-import type { Level } from '@/trace/asks';
+import type { Level } from '@/lib/storage';
 import { Segmented } from '@/ui/Segmented';
 import { Sheet } from '@/ui/Sheet';
 import { useMediaQuery } from '@/ui/useMediaQuery';

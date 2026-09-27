@@ -20,7 +20,8 @@ import { buildScene } from '@/engine/scene';
 import type { Speed, Timeline, TimelineAction } from '@/engine/timeline';
 import { createTimeline, timelineReducer } from '@/engine/timeline';
 import { commitSession, startAlgorithm } from '@/learn/commit';
-import type { Answer, Ask, Level } from '@/trace/asks';
+import type { Answer, Ask } from '@/trace/asks';
+import type { Level } from '@/lib/storage';
 import type { GradeResult } from '@/trace/grade';
 import type { RevealPlan, Session } from '@/trace/session';
 import { createSession, currentAsk, encodeInput, isFinished, revealPlan, skip, submit, wrongAskIndices } from '@/trace/session';
@@ -96,7 +97,8 @@ export function useTraceController(opts: ControllerInput) {
 
   const [startedAt] = useState(() => Date.now());
   const [session, setSession] = useState<Session>(() => {
-    let s = createSession(run, level, { algorithm: module.meta.id, variant, seed, input: encodeInput(module.encode(input)), startedAt });
+    // Blind uses the same asks as Full; the frozen stage is WP-K's job.
+    let s = createSession(run, level === 'blind' ? 'full' : level, { algorithm: module.meta.id, variant, seed, input: encodeInput(module.encode(input)), startedAt });
     if (mode === 'watch') while (currentAsk(s)) s = skip(s);
     return s;
   });

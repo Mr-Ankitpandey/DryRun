@@ -11,7 +11,7 @@
 
 import { Suspense, lazy, useMemo, useState } from 'react';
 import type { AlgorithmModule } from '@/algorithms/types';
-import type { Level } from '@/trace/asks';
+import type { Level } from '@/lib/storage';
 import type { GradeResult } from '@/trace/grade';
 import type { Session } from '@/trace/session';
 import { encodeInput } from '@/trace/session';

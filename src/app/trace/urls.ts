@@ -1,7 +1,7 @@
 /** Trace URLs (the URL is a trace's identity: algorithm, input, seed, mode, level). */
 
 import type { AlgorithmModule } from '@/algorithms/types';
-import type { Level } from '@/trace/asks';
+import type { Level } from '@/lib/storage';
 import { encodeInput } from '@/trace/session';
 import { createRng, hashString, newSeed } from '@/lib/rng';
 import { traceUrl } from '@/lib/url';

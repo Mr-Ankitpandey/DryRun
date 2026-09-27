@@ -3,7 +3,8 @@
 
 import type { MistakeRecord } from '@/lib/storage';
 import { parseQuery, traceUrl } from '@/lib/url';
-import type { Level, MistakeKind } from './asks';
+import type { MistakeKind } from './asks';
+import type { Level } from '@/lib/storage';
 import { MISTAKE_LABELS } from './asks';
 
 export interface MistakeOccurrence {

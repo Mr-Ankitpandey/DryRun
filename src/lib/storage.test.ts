@@ -66,7 +66,7 @@ describe('storage', () => {
       mistakes: [{ id: 'm', algorithm: 'a', kind: 'boundary', rule: 'r', seed: 's', input: 'i', askIndex: 0, at: 1 }, 'junk'],
       review: { 'binary-search': { algorithm: 'binary-search', box: 2, due: 5, reviews: 1, lastScore: 0.8 }, bad: { box: 9 } },
     });
-    expect(out?.settings).toEqual({ theme: 'system', motion: 'reduced', level: 'full' });
+    expect(out?.settings).toEqual({ theme: 'system', motion: 'reduced', level: 'full', language: 'pseudo' });
     expect(out?.sessions).toHaveLength(1);
     expect(out?.mistakes).toHaveLength(1);
     expect(Object.keys(out?.review ?? {})).toEqual(['binary-search']);
@@ -176,5 +176,13 @@ describe('storage schema extensions', () => {
     const many = Array.from({ length: MAX_MISTAKES + 5 }, (_, i) => mistake(i));
     expect(appendMistakes(s0, many).mistakes).toHaveLength(MAX_MISTAKES);
     expect(appendMistakes(s0, many).mistakes[0]?.id).toBe('m5');
+  });
+});
+
+describe('settings: level and code language', () => {
+  it('keeps blind level and valid languages, defaults unknown values', () => {
+    expect(migrate({ version: 1, settings: { level: 'blind', language: 'cpp' } })?.settings).toMatchObject({ level: 'blind', language: 'cpp' });
+    expect(migrate({ version: 1, settings: { level: 'expert', language: 'rust' } })?.settings).toMatchObject({ level: 'guided', language: 'pseudo' });
+    expect(migrate({ version: 1 })?.settings.language).toBe('pseudo');
   });
 });
