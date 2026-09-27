@@ -21,8 +21,8 @@ import { MotionModeProvider } from '@/render/MotionMode';
 import { SceneView, gridOverhang } from '@/render/SceneView';
 import { AskPanel } from './AskPanel';
 import { AskSurface } from './AskSurface';
+import { BlindHiddenNote, BlindReveal } from './BlindReveal';
 import { InvariantLens } from './InvariantLens';
-import { labelFor } from './logic';
 import { StageOverlay } from './StageOverlay';
 import { StartPanel } from './StartPanel';
 import { useTraceController } from './useTraceController';
@@ -76,25 +76,29 @@ function Player({ module, input, seed, mode, level, variant, maxAsks, startAtFir
   const invariant = module.invariant[c.variant] ?? Object.values(module.invariant)[0] ?? { name: 'Invariant', sentence: '' };
   const state = run.states[tl.k] ?? run.states[0];
 
-  // ---- what the question area shows
+  // ---- what the question area shows (Blind: while the reveal runs, neither
+  // the question nor the verdict; the reveal panel sits in 'none')
   const area: Area =
     !compact && c.finished && tl.k >= tl.length && (!verdict || verdict.ack)
       ? 'summary'
       : open
         ? 'ask'
-        : verdict && mode === 'trace'
-          ? 'verdict'
-          : mode === 'trace' && pending && !c.ended
-            ? 'start'
-            : 'none';
+        : c.revealing
+          ? 'none'
+          : verdict && mode === 'trace'
+            ? 'verdict'
+            : mode === 'trace' && pending && !c.ended
+              ? 'start'
+              : 'none';
   const showVerdict = verdict !== null && open === null && area === 'verdict';
-  const nextHere = pending !== null && pending.askIndex === tl.k && !c.ended;
+  const nextHere = pending !== null && c.askAt === tl.k && !c.ended;
   const action = !verdict ? null : verdict.last ? (compact ? null : 'See summary') : nextHere ? 'Next question' : 'Continue';
   const onContinue = () => {
-    if (verdict?.last) c.nav({ type: 'seek', k: tl.length });
+    if (c.revealing) c.skipReveal();
+    else if (verdict?.last) c.nav({ type: 'seek', k: tl.length });
     else c.proceed();
   };
-  const canContinue = (area === 'verdict' && action !== null && !tl.playing) || (area === 'start' && !tl.playing);
+  const canContinue = (area === 'verdict' && action !== null && !tl.playing) || (area === 'start' && !tl.playing) || c.revealing;
 
   useTraceKeys({ ask: open ? open.ask.kind : null, canContinue, modal: help }, (cmd) => {
     switch (cmd.type) {
@@ -119,11 +123,15 @@ function Player({ module, input, seed, mode, level, variant, maxAsks, startAtFir
     }
   });
 
-  const firstCandidate = open?.ask.kind === 'pick' ? scene.prims.get(open.ask.candidates[0] ?? '') : undefined;
+  const firstCandidate = open?.ask.kind === 'pick' ? scene.prims.get(open.order[0] ?? '') : undefined;
   const pickNoun = firstCandidate?.kind === 'bar' ? 'element' : firstCandidate?.kind === 'cell' ? 'cell' : 'node';
-  const label = (id: string) => labelFor(scene, id);
+  const label = c.label;
+  // Blind: the narration line carries the hidden-steps sentence, except where
+  // there is none to carry it (the compact player; k = 0, whose "Start" line
+  // the full layout writes itself).
+  const hiddenLine = c.hiddenNote && (compact || tl.k === 0) ? <BlindHiddenNote note={c.hiddenNote} /> : null;
 
-  const areaContent =
+  const askPanel =
     area === 'ask' && open ? (
       <AskPanel
         ask={open.ask}
@@ -141,6 +149,18 @@ function Player({ module, input, seed, mode, level, variant, maxAsks, startAtFir
         desktop={desktop}
         pickNoun={pickNoun}
       />
+    ) : null;
+
+  const areaContent =
+    c.revealing && c.reveal ? (
+      <BlindReveal done={tl.k - c.reveal.from} total={c.reveal.to - c.reveal.from} onSkip={c.skipReveal} />
+    ) : askPanel && hiddenLine ? (
+      <div className="flex flex-col gap-3">
+        {hiddenLine}
+        {askPanel}
+      </div>
+    ) : askPanel ? (
+      askPanel
     ) : area === 'verdict' && verdict ? (
       <VerdictPanel verdict={verdict} note={compact ? (run.steps[verdict.plan.fromK]?.note ?? null) : null} action={action} busy={tl.playing} onContinue={onContinue} />
     ) : area === 'start' && pending ? (
@@ -161,6 +181,8 @@ function Player({ module, input, seed, mode, level, variant, maxAsks, startAtFir
       />
     </div>
   );
+  // Views that read the narration from the run get the blind note (see viewRun).
+  const layoutC = c.viewRun === c.run ? c : { ...c, run: c.viewRun };
   const lens = <InvariantLens name={invariant.name} sentence={invariant.sentence} vars={state?.vars ?? {}} />;
 
   const body = compact ? (
@@ -174,7 +196,7 @@ function Player({ module, input, seed, mode, level, variant, maxAsks, startAtFir
       <FullLayout
         desktop={desktop}
         area={area}
-        c={c}
+        c={layoutC}
         module={module}
         input={input}
         mode={mode}
@@ -194,7 +216,7 @@ function Player({ module, input, seed, mode, level, variant, maxAsks, startAtFir
   );
 
   return (
-    <MotionModeProvider scrubbing={tl.scrubbing} speed={tl.speed} hints={c.hints}>
+    <MotionModeProvider scrubbing={tl.scrubbing} speed={c.motionSpeed} hints={c.hints}>
       <HoverProvider>
         {body}
       </HoverProvider>

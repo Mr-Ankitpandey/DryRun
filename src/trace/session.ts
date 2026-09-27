@@ -6,11 +6,20 @@ import type { Step } from '@/engine/events';
 import type { Run } from '@/engine/run';
 import { askIndices } from '@/engine/run';
 import { hashString } from '@/lib/rng';
-import type { MistakeRecord, SessionRecord } from '@/lib/storage';
+import type { Level as TraceLevel, MistakeRecord, SessionRecord } from '@/lib/storage';
 import { buildQuery } from '@/lib/url';
 import type { Answer, Ask, Level } from './asks';
 import type { GradeResult } from './grade';
 import { grade } from './grade';
+
+/** The level a session is traced at: Guided, Full, or Blind (the Guided asks
+ *  on a stage that freezes between them; the freezing is the player's job). */
+export type SessionLevel = TraceLevel;
+
+/** Which asks a level shows: Blind asks the Guided set. */
+export function askLevel(level: SessionLevel): Level {
+  return level === 'blind' ? 'guided' : level;
+}
 
 export interface SessionMeta {
   algorithm: string;
@@ -32,7 +41,7 @@ export interface AnswerRecord {
 export interface Session {
   readonly id: string;
   readonly meta: SessionMeta;
-  readonly level: Level;
+  readonly level: SessionLevel;
   readonly steps: readonly Step[];
   /** Step indices carrying an ask at this level, ascending. */
   readonly askIndices: readonly number[];
@@ -64,9 +73,9 @@ export function sessionId(meta: SessionMeta): string {
   return `s-${meta.startedAt.toString(36)}-${hashString(`${meta.algorithm}|${meta.variant}|${meta.seed}|${meta.input}`).toString(36)}`;
 }
 
-/** Starts a session on a completed run; asks are filtered by level. */
-export function createSession(run: Run, level: Level, meta: SessionMeta): Session {
-  const indices = askIndices(run.steps, level);
+/** Starts a session on a completed run; asks are filtered by level (Blind: the Guided asks). */
+export function createSession(run: Run, level: SessionLevel, meta: SessionMeta): Session {
+  const indices = askIndices(run.steps, askLevel(level));
   return {
     id: sessionId(meta),
     meta,

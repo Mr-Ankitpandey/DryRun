@@ -20,6 +20,7 @@ import { useStore } from '@/ui/store';
 import { TopBar } from '@/ui/TopBar';
 import { DESKTOP_QUERY, useMediaQuery } from '@/ui/useMediaQuery';
 import { SiteNav } from './SiteNav';
+import { BLIND_INTRO, introSeen, markIntroSeen } from './trace/blind';
 import { EditInput } from './trace/EditInput';
 import { TracePlayer } from './trace/TracePlayer';
 import { derivedSeed } from './trace/urls';
@@ -70,6 +71,21 @@ export default function Trace() {
   return <TraceScreen key={entry.id} title={title} module={loaded.module} />;
 }
 
+const LEVELS = [
+  { value: 'guided', label: 'Guided' },
+  { value: 'full', label: 'Full' },
+  { value: 'blind', label: 'Blind' },
+] as const satisfies readonly { value: Level; label: string }[];
+
+/** sessionStorage, or null where it is blocked (the Blind note then just shows). */
+function session(): Storage | null {
+  try {
+    return typeof window === 'undefined' ? null : window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
 function Unknown({ id }: { id: string }) {
   return (
     <AppShell topBar={<TopBar title="Trace" end={<SiteNav current="/algorithms" />} />}>
@@ -88,6 +104,7 @@ function TraceScreen({ title, module }: { title: string; module: AlgorithmModule
   const { store } = useStore();
   const desktop = useMediaQuery(DESKTOP_QUERY);
   const [editing, setEditing] = useState(false);
+  const [introShown, setIntroShown] = useState(() => !introSeen(session()));
 
   const q = parseQuery(search);
   // Only a link that carries input parameters is decoded: several modules
@@ -126,7 +143,7 @@ function TraceScreen({ title, module }: { title: string; module: AlgorithmModule
           end={
             <>
               <div className="hidden items-center gap-2 lg:flex">
-                <Segmented label="Level" size="sm" value={level} onChange={(v) => set({ level: v })} options={[{ value: 'guided', label: 'Guided' }, { value: 'full', label: 'Full' }]} />
+                <Segmented label="Level" size="sm" value={level} onChange={(v) => set({ level: v })} options={LEVELS} />
                 <Segmented label="Mode" size="sm" value={mode} onChange={(v) => set({ mode: v })} options={[{ value: 'trace', label: 'Trace' }, { value: 'watch', label: 'Watch' }]} />
               </div>
               <Button size="sm" onClick={() => setEditing((e) => !e)} aria-expanded={editing} data-testid="edit-input-button">
@@ -141,6 +158,21 @@ function TraceScreen({ title, module }: { title: string; module: AlgorithmModule
       }
     >
       {desktop && editing && <div className="px-4 pt-4">{edit}</div>}
+      {level === 'blind' && mode === 'trace' && introShown && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-3" data-testid="blind-intro">
+          <p className="m-0 text-sm text-ink">{BLIND_INTRO}</p>
+          <Button
+            size="sm"
+            onClick={() => {
+              markIntroSeen(session());
+              setIntroShown(false);
+            }}
+            data-testid="blind-intro-dismiss"
+          >
+            Got it
+          </Button>
+        </div>
+      )}
       {(notice || about) && (
         <p className="m-0 max-w-none px-4 pt-3 text-sm text-ink-2" data-testid="input-notice">
           {notice ?? about} {notice || !matching ? null : <span className="hidden sm:inline">Edit input to trace your own.</span>}

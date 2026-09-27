@@ -8,7 +8,12 @@
  *    continue         acknowledge the verdict and play to the next gate
  *
  *  Play is a timer sized by the step on screen (logic.playDelayMs) and stops
- *  at the gate (timeline reducer). Watch mode skips every ask up front. */
+ *  at the gate (timeline reducer). Watch mode skips every ask up front.
+ *
+ *  Blind (blind.ts): the gate is the frozen point F, so the stage, lens, code
+ *  and timeline stop there and the ask opens at k === F with the steps up to
+ *  it hidden. An answer starts the reveal: F → G + 1 at REVEAL_SPEED (instant
+ *  with reduced motion), then the verdict, then F moves to G + 1. */
 
 import { useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { AlgorithmModule } from '@/algorithms/types';
@@ -20,6 +25,7 @@ import { buildScene } from '@/engine/scene';
 import type { Speed, Timeline, TimelineAction } from '@/engine/timeline';
 import { createTimeline, timelineReducer } from '@/engine/timeline';
 import { commitSession, startAlgorithm } from '@/learn/commit';
+import { useMotionPref } from '@/ui/motion';
 import type { Answer, Ask } from '@/trace/asks';
 import type { Level } from '@/lib/storage';
 import type { GradeResult } from '@/trace/grade';
@@ -32,6 +38,8 @@ import type { Outline } from '@/render/outline';
 import { outlineOf } from '@/render/outline';
 import type { FormFactor } from './logic';
 import { hintOrder, keyHints, labelFor, layoutFor, playDelayMs, poolOrder, resolveTransient } from './logic';
+import type { BlindView } from './blind';
+import { REVEAL_SPEED, askIdOf, blindView, frozenAsk, hiddenSentence, revealDelayMs, timelineGate, withNote } from './blind';
 
 export interface ControllerInput {
   module: AlgorithmModule<unknown>;
@@ -94,22 +102,28 @@ export function useTraceController(opts: ControllerInput) {
   const run: Run = useMemo(() => runSteps(module.initialState(input), module.generate(input), { maxSteps: module.meta.caps.maxSteps }), [module, input]);
   const layout = useMemo(() => layoutFor(run, form), [run, form]);
   const variant = module.variantOf(input);
+  /** Blind applies to traces only; watch mode plays everything. */
+  const blind = level === 'blind' && mode === 'trace';
+  const reduced = useMotionPref().reduced;
 
   const [startedAt] = useState(() => Date.now());
   const [session, setSession] = useState<Session>(() => {
-    // Blind uses the same asks as Full; the frozen stage is WP-K's job.
-    let s = createSession(run, level === 'blind' ? 'full' : level, { algorithm: module.meta.id, variant, seed, input: encodeInput(module.encode(input)), startedAt });
+    let s = createSession(run, level, { algorithm: module.meta.id, variant, seed, input: encodeInput(module.encode(input)), startedAt });
     if (mode === 'watch') while (currentAsk(s)) s = skip(s);
     return s;
   });
 
   const [tl, dispatch] = useReducer(timelineReducer, null, (): Timeline => {
-    const gate = mode === 'trace' ? session.gate : null;
+    const gate = mode === 'trace' ? timelineGate(level, run, session) : null;
     const t = createTimeline(run.steps.length, gate);
     return startAtFirstAsk && gate !== null ? { ...t, k: gate } : t;
   });
 
   const [verdict, setVerdict] = useState<Verdict | null>(null);
+  /** Blind: the reveal after an answer plays k up to `to`, then the verdict shows. */
+  const [reveal, setReveal] = useState<{ from: number; to: number } | null>(null);
+  const revealing = reveal !== null && tl.k < reveal.to;
+  const [jumped, setJumped] = useState(0);
   const [orderSeq, setOrderSeq] = useState<Id[]>([]);
   const [finished, setFinished] = useState(false);
   const finishedRef = useRef(false);
@@ -143,6 +157,14 @@ export function useTraceController(opts: ControllerInput) {
   if (!raw) throw new Error('trace: run has no states');
   const state = useMemo(() => resolveTransient(run.states[tl.k - 1], run.steps[tl.k - 1], raw), [run, tl.k, raw]);
   const scene = useMemo(() => buildScene(state, layout, { width: layout.width }), [state, layout]);
+  const sceneAt = useCallback(
+    (k: number): Scene => {
+      const s = run.states[k];
+      if (!s) throw new Error(`trace: no state ${k}`);
+      return buildScene(resolveTransient(run.states[k - 1], run.steps[k - 1], s), layout, { width: layout.width });
+    },
+    [run, layout],
+  );
   const [shown, setShown] = useState<{ k: number; hints: MoveHints }>({ k: tl.k, hints: NO_HINTS });
   if (shown.k !== tl.k) {
     const fwd = tl.k === shown.k + 1;
@@ -160,13 +182,37 @@ export function useTraceController(opts: ControllerInput) {
     return () => window.clearTimeout(id);
   }, [tl.playing, tl.k, tl.speed, run]);
 
+  // ---- blind reveal: F → G + 1, one step at a time, faster than play
+  useEffect(() => {
+    if (!reveal || tl.k >= reveal.to) return;
+    const id = window.setTimeout(() => dispatch({ type: 'next' }), revealDelayMs(run.steps[tl.k - 1]));
+    return () => window.clearTimeout(id);
+  }, [reveal, tl.k, run]);
+
+  // A skipped reveal lands with zero-duration transitions (a scrub), then
+  // leaves scrubbing on the next frame so later steps animate again.
+  useEffect(() => {
+    if (jumped === 0) return;
+    const id = window.requestAnimationFrame(() => dispatch({ type: 'scrubEnd' }));
+    return () => window.cancelAnimationFrame(id);
+  }, [jumped]);
+
   // ---- the open ask
-  const pending = currentAsk(session);
+  const pending = useMemo(() => currentAsk(session), [session]);
+  const view: BlindView | null = useMemo(() => (blind ? blindView(run, session.askIndices, session.cursor) : null), [blind, run, session]);
+  /** k at which the pending ask opens: the ask's step, or the frozen point in Blind. */
+  const askAt = pending ? (view ? view.frozenK : pending.askIndex) : null;
   const waiting = verdict !== null && !verdict.ack;
   const ended = finished || (maxAsks !== undefined && session.answers.length >= maxAsks);
+  /** Blind: the scene the pending ask is really asked on (never drawn; labels and grading only). */
+  const askScene = useMemo(() => (view && pending && view.askK !== tl.k ? sceneAt(view.askK) : scene), [view, pending, tl.k, sceneAt, scene]);
+  const label = useCallback((id: Id) => (scene.prims.has(id) ? labelFor(scene, id) : labelFor(askScene, id)), [scene, askScene]);
   const open: OpenAsk | null = useMemo(() => {
-    if (mode !== 'trace' || ended || !pending || tl.k !== pending.askIndex || waiting) return null;
-    const { ask, askIndex } = pending;
+    if (mode !== 'trace' || ended || !pending || tl.k !== askAt || waiting) return null;
+    const { askIndex } = pending;
+    const frozen = run.states[tl.k];
+    const atAsk = run.states[askIndex];
+    const ask = view && frozen && atAsk ? frozenAsk(pending.ask, frozen, atAsk) : pending.ask;
     if (ask.kind === 'pick') {
       const order = hintOrder(ask.candidates, (id) => {
         const o = outlineOf(scene, id, 0);
@@ -175,11 +221,11 @@ export function useTraceController(opts: ControllerInput) {
       return { ask, askIndex, order, hints: keyHints(order) };
     }
     if (ask.kind === 'order') {
-      const order = poolOrder(ask.pool, (id) => labelFor(scene, id));
+      const order = poolOrder(ask.pool, label);
       return { ask, askIndex, order, hints: keyHints(order) };
     }
     return { ask, askIndex, order: [], hints: new Map() };
-  }, [mode, ended, pending, tl.k, waiting, scene]);
+  }, [mode, ended, pending, tl.k, askAt, waiting, scene, run, view, label]);
 
   // A new ask starts with an empty order.
   const openKey = open ? open.askIndex : -1;
@@ -194,38 +240,60 @@ export function useTraceController(opts: ControllerInput) {
 
   const nav = useCallback(
     (a: TimelineAction) => {
+      // The reveal is not scrubbable while it runs; it can only be skipped.
+      if (revealing && a.type !== 'speed') return;
+      if (reveal) setReveal(null);
       if (a.type === 'play' || a.type === 'toggle') playStart.current = true;
       if (a.type !== 'speed' && a.type !== 'scrubEnd' && a.type !== 'pause') acknowledge();
       dispatch(a);
     },
-    [acknowledge],
+    [acknowledge, revealing, reveal],
   );
+
+  /** Blind: jump to the end of the reveal (Skip, Enter or Space). */
+  const skipReveal = useCallback(() => {
+    if (!reveal || tl.k >= reveal.to) return;
+    dispatch({ type: 'scrub', k: reveal.to });
+    setJumped((n) => n + 1);
+  }, [reveal, tl.k]);
 
   const answer = useCallback(
     (given: Answer) => {
       const cur = currentAsk(session);
-      if (!cur || !open || cur.askIndex !== tl.k) return;
-      const { session: next, result } = submit(session, given, Date.now());
+      if (!cur || !open || askAt !== tl.k) return;
+      const ask = cur.ask;
+      // Blind: a pick on the frozen stage names an element at the ask.
+      const frozen = run.states[tl.k];
+      const atAsk = run.states[cur.askIndex];
+      const graded = view && ask.kind === 'pick' && typeof given === 'string' && frozen && atAsk ? askIdOf(ask, given, frozen, atAsk) : given;
+      const { session: next, result } = submit(session, graded, Date.now());
       const plan = revealPlan(next);
       if (!plan) return;
       const last = isFinished(next) || (maxAsks !== undefined && next.answers.length >= maxAsks);
-      const ask = cur.ask;
       const truthId = ask.kind === 'pick' ? ask.answer : null;
-      const truth = truthId ? markFor(scene, truthId) : null;
-      const ghost = ask.kind === 'pick' && !result.correct && typeof given === 'string' ? markFor(scene, given) : null;
+      const truth = truthId ? markFor(askScene, truthId) : null;
+      const ghost = ask.kind === 'pick' && !result.correct && typeof graded === 'string' ? markFor(askScene, graded) : null;
       setSession(next);
-      setVerdict({ ask, askIndex: cur.askIndex, given, result, plan, askedScene: scene, ghost, truth, last, ack: false });
-      dispatch({ type: 'gate', gate: last ? null : next.gate });
-      dispatch({ type: 'next' });
+      setVerdict({ ask, askIndex: cur.askIndex, given: graded, result, plan, askedScene: askScene, ghost, truth, last, ack: false });
+      dispatch({ type: 'gate', gate: last ? null : timelineGate(level, run, next) });
+      if (view && view.hidden > 0) {
+        // The hidden steps and the answered one play through, then the verdict.
+        if (reduced) dispatch({ type: 'seek', k: view.revealTo });
+        else setReveal({ from: tl.k, to: view.revealTo });
+      } else dispatch({ type: 'next' });
       onAnswer?.(result, next);
       if (last) finish(next);
     },
-    [session, open, tl.k, maxAsks, scene, onAnswer, finish],
+    [session, open, askAt, tl.k, run, view, maxAsks, askScene, level, reduced, onAnswer, finish],
   );
 
   /** Continue after a verdict (or start): play on to the next gate. */
   const proceed = useCallback(() => {
-    if (verdict && !verdict.ack && pending && tl.k === pending.askIndex && !ended) {
+    if (revealing) {
+      skipReveal();
+      return;
+    }
+    if (verdict && !verdict.ack && pending && tl.k === askAt && !ended) {
       acknowledge(); // the next question is right here
       return;
     }
@@ -234,7 +302,7 @@ export function useTraceController(opts: ControllerInput) {
       return;
     }
     nav({ type: 'play' });
-  }, [verdict, pending, tl.k, tl.length, ended, acknowledge, nav]);
+  }, [revealing, skipReveal, verdict, pending, tl.k, askAt, tl.length, ended, acknowledge, nav]);
 
   const answerNth = useCallback(
     (n: number) => {
@@ -266,8 +334,24 @@ export function useTraceController(opts: ControllerInput) {
   const right = useMemo(() => session.answers.filter((a) => a.result.correct).map((a) => a.askIndex), [session]);
   const phases = useMemo(() => run.steps.map((s) => s.phase), [run]);
 
+  // Blind: while the ask is open the narration says how many steps ran
+  // hidden instead of the frozen step's note (views read notes from `viewRun`).
+  const hiddenNote = view && open && view.hidden > 0 ? hiddenSentence(view.hidden) : null;
+  const viewRun = useMemo(() => (hiddenNote ? withNote(run, tl.k, hiddenNote) : run), [hiddenNote, run, tl.k]);
+  /** Playback speed of transitions: the reveal runs at REVEAL_SPEED. */
+  const motionSpeed = revealing ? Math.max(REVEAL_SPEED, tl.speed) : tl.speed;
+
   return {
     run,
+    viewRun,
+    hiddenNote,
+    blind: view,
+    revealing,
+    reveal,
+    askAt,
+    label,
+    motionSpeed,
+    skipReveal,
     layout,
     scene,
     hints,

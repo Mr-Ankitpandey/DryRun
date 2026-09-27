@@ -5,6 +5,7 @@ import { createTimeline, timelineReducer } from '@/engine/timeline';
 import type { SessionMeta } from './session';
 import {
   answerAt,
+  askLevel,
   createSession,
   currentAsk,
   encodeInput,
@@ -157,5 +158,23 @@ describe('session on the basic binary-search preset', () => {
     expect(none.askIndices).toEqual([]);
     expect(none.gate).toBeNull();
     expect(isFinished(none)).toBe(true);
+  });
+
+  it('blind asks the guided set and records its own level', () => {
+    expect(askLevel('blind')).toBe('guided');
+    expect(askLevel('guided')).toBe('guided');
+    expect(askLevel('full')).toBe('full');
+    const g = createSession(basicRun, 'guided', meta);
+    const b = createSession(basicRun, 'blind', meta);
+    expect(b.level).toBe('blind');
+    expect(b.askIndices).toEqual(g.askIndices);
+    expect(b.gate).toBe(g.gate);
+    let s = b;
+    s = submit(s, 'e:0', 10).session; // wrong: boundary
+    for (const given of ['e:5', 'e:6', 'e:7', 'e:7', 7] as const) s = submit(s, given, 20).session;
+    expect(isFinished(s)).toBe(true);
+    expect(sessionRecord(s, 9_000)).toMatchObject({ level: 'blind', asked: 6, correct: 5 });
+    expect(mistakeRecords(s)).toHaveLength(1);
+    expect(mistakeRecords(s)[0]).toMatchObject({ kind: 'boundary', askIndex: 2 });
   });
 });

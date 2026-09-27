@@ -13,6 +13,7 @@ import { applyEvent } from '@/engine/reducer';
 import type { Scene } from '@/engine/scene';
 import type { State, Transient } from '@/engine/state';
 import { refToId } from '@/engine/state';
+import type { Level } from '@/lib/storage';
 import type { Answer, Ask, MistakeKind } from '@/trace/asks';
 import { MISTAKE_LABELS } from '@/trace/asks';
 import type { Session } from '@/trace/session';
@@ -236,10 +237,13 @@ export function mistakesByKind(session: Session): MistakeGroup[] {
   return [...groups.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
-/** "5 of 6 right" with a rounded percentage, or null before any answer. */
-export function scoreLine(asked: number, correct: number): string | null {
+/** "5 of 6 right" with a rounded percentage, or null before any answer. A
+ *  Blind session names its level ("Blind: 5 of 7 right (71 %)"); Guided and
+ *  Full read as before. */
+export function scoreLine(asked: number, correct: number, level?: Level): string | null {
   if (asked === 0) return null;
-  return `${correct} of ${asked} right (${Math.round((100 * correct) / asked)} %)`;
+  const line = `${correct} of ${asked} right (${Math.round((100 * correct) / asked)} %)`;
+  return level === 'blind' ? `Blind: ${line}` : line;
 }
 
 // ---------------------------------------------------------------- transient refs
