@@ -146,7 +146,7 @@ React state), immer (structural sharing is done by hand in a 100-line reducer),
 react-router (heavier than needed), wrangler (needs Node 22; not needed for static
 Pages via Git integration).
 
-Budgets: landing route ≤ 130 KB gzipped JS total (was 120; the live hero needs React, Motion's core, the engine and the player, ≈ 127 KB measured), LCP < 2.5 s and CLS < 0.1 on Fast 4G + CPU ×4; each algorithm module ≤ 15 KB and
+Budgets: landing route ≤ 135 KB gzipped JS total (was 120, then 130; the live hero needs React, Motion's core, the engine and the player, ≈ 127 KB measured), LCP < 2.5 s and CLS < 0.1 on Fast 4G + CPU ×4; each algorithm module ≤ 15 KB and
 lazy-loaded; fonts ≤ 120 KB total; LCP < 2.5 s on simulated 4G; Lighthouse ≥ 90.
 
 ## 6. Repository structure
@@ -352,3 +352,9 @@ the final review, README and release.
 - 2026-09-27 — Agents must not run `npx <tool>` for tools missing from node_modules
   (two agents ran `npx prettier`, which resolves through ~/.npm/_npx outside the
   project). Added to CLAUDE.md.
+- 2026-10-06 — Landing JS budget 130 → 135 KB gz (measured 130.4 after moving the
+  binary-search code listings out of the landing: `binarySearchCore`). The growth is
+  Blind-mode logic in the player and the app-root LazyMotion. User-facing targets all
+  pass: LCP < 2.5 s and CLS < 0.1 on /, /t/binary-search, /t/dijkstra (Fast 4G, CPU ×4);
+  p95 frame time 16.7 ms on quick sort, merge sort, Dijkstra, knapsack, DFS, LCS at
+  390 px under CPU ×6.

@@ -1,46 +1,23 @@
 /** Motion context for everything under the stage (docs/ARCHITECTURE.md §5,
  *  docs/DESIGN.md §3a):
- *  - Motion's reduced bundle: `LazyMotion` with the `domAnimation` features
- *    loaded asynchronously (./motion-features); render and trace code use the
- *    `m` components from 'motion/react-m' only.
+ *  - Motion's reduced bundle: the app's one `LazyMotion` is at the root
+ *    (src/ui/MotionRoot.tsx); render and trace code use the `m` components
+ *    from 'motion/react-m' only.
  *  - Zero-duration mode: while the timeline is scrubbed, or when the OS or the
  *    stored setting asks for reduced motion, every transition is instant.
  *    State is exact, so there is nothing to catch up on.
  *  - Playback speed scales every transition.
  *  - Move hints for the step being shown (arc over / under / flat). */
 
-import { LazyMotion } from 'motion/react';
 import type { Transition } from 'motion/react';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useMotionPref } from '@/ui/motion';
+import { useMotionReady } from '@/ui/MotionRoot';
 import type { Lift, MoveHints } from './motion-hints';
 import { NO_HINTS } from './motion-hints';
 import type { RenderMotion } from './springs';
 import { instant, renderTransition } from './springs';
-
-/** Motion's animation features are fetched on the first sign of a person
- *  (pointer, touch or key), not with the page: a trace never moves before
- *  someone acts, and a page that is only looked at never pays for them. */
-const WAKE_EVENTS = ['pointerdown', 'pointermove', 'touchstart', 'keydown'] as const;
-let awake = false;
-let waking: Promise<void> | null = null;
-function firstInteraction(): Promise<void> {
-  if (awake || typeof window === 'undefined') return Promise.resolve();
-  waking ??= new Promise<void>((resolve) => {
-    const wake = () => {
-      awake = true;
-      for (const ev of WAKE_EVENTS) window.removeEventListener(ev, wake, true);
-      resolve();
-    };
-    for (const ev of WAKE_EVENTS) window.addEventListener(ev, wake, { capture: true, passive: true });
-  });
-  return waking;
-}
-const loadFeatures = () =>
-  firstInteraction()
-    .then(() => import('./motion-features'))
-    .then((r) => r.default);
 
 interface MotionMode {
   instant: boolean;
@@ -75,12 +52,21 @@ export function MotionModeProvider({ scrubbing = false, reduced = false, speed =
   useEffect(() => setAppeared(true), []);
   const value = useMemo(() => ({ instant: isInstant, speed, appeared }), [isInstant, speed, appeared]);
   return (
-    <LazyMotion features={loadFeatures}>
-      <MotionModeContext.Provider value={value}>
-        <HintsContext.Provider value={hints}>{children}</HintsContext.Provider>
-      </MotionModeContext.Provider>
-    </LazyMotion>
+    <MotionModeContext.Provider value={value}>
+      <HintsContext.Provider value={hints}>{children}</HintsContext.Provider>
+    </MotionModeContext.Provider>
   );
+}
+
+/** Re-marks a subtree as "first render" when it mounts late (a lazily loaded
+ *  view): what it shows on arrival is drawn in place, not faded in. */
+export function Settled({ children }: { children: ReactNode }) {
+  const parent = useContext(MotionModeContext);
+  const [appeared, setAppeared] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setAppeared(true), []);
+  const value = useMemo(() => ({ ...parent, appeared: parent.appeared && appeared }), [parent, appeared]);
+  return <MotionModeContext.Provider value={value}>{children}</MotionModeContext.Provider>;
 }
 
 export function useInstant(): boolean {
@@ -88,10 +74,13 @@ export function useInstant(): boolean {
 }
 
 /** Whether a component mounting now should skip its enter animation: in
- *  instant mode, and for everything present when the stage first renders. */
+ *  instant mode, for everything present when the stage first renders, and
+ *  before Motion's features have loaded (the animation could not play, and
+ *  the element would wait invisible at its `initial` values). */
 export function useEnterInstant(): boolean {
   const { instant: inst, appeared } = useContext(MotionModeContext);
-  return inst || !appeared;
+  const ready = useMotionReady();
+  return inst || !appeared || !ready;
 }
 
 export function useSpeed(): number {

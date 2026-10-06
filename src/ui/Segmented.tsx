@@ -18,8 +18,8 @@ export interface SegmentedProps<T extends string> {
 }
 
 /** A row of keys for a small set of modes (level, code/viz). Each segment is a
- *  full 44 px target; the selected one is filled ink, like a pressed key. Arrow
- *  keys move the selection. */
+ *  full 44 px target (`sm` is 36 px, and 44 on touch screens); the selected
+ *  one is filled ink, like a pressed key. Arrow keys move the selection. */
 export function Segmented<T extends string>({ options, value, onChange, label, size = 'md', className }: SegmentedProps<T>) {
   const enabled = options.filter((o) => !o.disabled);
 
@@ -45,7 +45,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, s
       role="radiogroup"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={cx('inline-flex', size === 'md' ? 'h-11' : 'h-9', className)}
+      className={cx('inline-flex', size === 'md' ? 'h-11' : 'h-9 pointer-coarse:h-11', className)}
     >
       {options.map((o) => {
         const selected = o.value === value;

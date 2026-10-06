@@ -139,9 +139,8 @@ for (const id of ['binary-search', 'quick-sort', 'dijkstra']) {
       if (hidden > 0) {
         hiddenSeen++;
         const sentence = `${hidden} ${hidden === 1 ? 'step runs' : 'steps run'} hidden. Keep the state in your head.`;
-        // The narration says it (k = 0: the question panel does, the narration line there is "Start").
-        if (frozenK > 0) await expect(page.getByTestId('narration')).toContainText(sentence);
-        else await expect(page.getByTestId('blind-hidden')).toHaveText(sentence);
+        // The narration line says it at every frozen point, including k = 0.
+        await expect(page.getByTestId('narration')).toContainText(sentence);
         await expect(timeline).toHaveAttribute('aria-valuetext', new RegExp(sentence.replace('.', '\\.')));
 
         // Try to get into the hidden range: step, play, End on the timeline, drag to the far right.

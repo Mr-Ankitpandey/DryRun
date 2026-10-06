@@ -1,13 +1,24 @@
 /** Distance table for graphs: one row per node with its current label text
- *  (∞ when none) and mark. Rows link to the graph node on hover. Settled rows
- *  are bold with a drawn tick (not colour alone). */
+ *  ("–" until the algorithm labels it; Dijkstra's own labels say ∞) and its
+ *  mark. Rows link to the graph node on hover. Settled rows are bold with a
+ *  drawn tick (not colour alone). The wording is a prop: a DFS labels nodes
+ *  with discovery / finish times, not distances. */
 
 import type { Scene } from '@/engine/scene';
 import { primsOf } from '@/engine/scene';
 import { useHoverHandlers, useLinked } from './HoverProvider';
 import { TICK_PATH } from './marks';
 
-export function DistTable({ scene, title = 'Distance' }: { scene: Scene; title?: string }) {
+export interface DistTableProps {
+  scene: Scene;
+  title?: string;
+  /** Header of the value column. */
+  column?: string;
+  /** Shown for a node without a label yet. */
+  empty?: string;
+}
+
+export function DistTable({ scene, title = 'Distance', column = 'dist', empty = '–' }: DistTableProps) {
   const nodes = primsOf(scene, 'gnode');
   if (nodes.length === 0) return null;
   return (
@@ -17,13 +28,13 @@ export function DistTable({ scene, title = 'Distance' }: { scene: Scene; title?:
         <thead>
           <tr className="font-sans text-xs text-ink-2">
             <th className="px-2 py-0.5 text-left font-medium">node</th>
-            <th className="px-2 py-0.5 text-right font-medium">dist</th>
+            <th className="px-2 py-0.5 text-right font-medium">{column}</th>
             <th className="px-2 py-0.5 text-left font-medium">state</th>
           </tr>
         </thead>
         <tbody>
           {nodes.map((n) => (
-            <DistRow key={n.id} id={n.id} label={n.label} text={n.text} mark={n.mark} />
+            <DistRow key={n.id} id={n.id} label={n.label} text={n.text} mark={n.mark} empty={empty} />
           ))}
         </tbody>
       </table>
@@ -31,13 +42,13 @@ export function DistTable({ scene, title = 'Distance' }: { scene: Scene; title?:
   );
 }
 
-function DistRow({ id, label, text, mark }: { id: string; label: string; text: string | null; mark: string | null }) {
+function DistRow({ id, label, text, mark, empty }: { id: string; label: string; text: string | null; mark: string | null; empty: string }) {
   const linked = useLinked(id);
   const handlers = useHoverHandlers(id);
   return (
     <tr data-id={id} data-linked={linked ? 'true' : undefined} {...handlers} className={`border-t border-grid ${linked ? 'bg-hatch' : ''}`}>
       <td className="px-2 py-0.5">{label}</td>
-      <td className={`px-2 py-0.5 text-right ${mark === 'settled' ? 'font-bold' : ''}`}>{text ?? '∞'}</td>
+      <td className={`px-2 py-0.5 text-right ${mark === 'settled' ? 'font-bold' : ''}`}>{text ?? empty}</td>
       <td className="px-2 py-0.5 font-sans text-xs text-ink-2">
         <span className="inline-flex items-center gap-1">
           {mark ?? ''}

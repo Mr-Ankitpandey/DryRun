@@ -126,10 +126,9 @@ function Player({ module, input, seed, mode, level, variant, maxAsks, startAtFir
   const firstCandidate = open?.ask.kind === 'pick' ? scene.prims.get(open.order[0] ?? '') : undefined;
   const pickNoun = firstCandidate?.kind === 'bar' ? 'element' : firstCandidate?.kind === 'cell' ? 'cell' : 'node';
   const label = c.label;
-  // Blind: the narration line carries the hidden-steps sentence, except where
-  // there is none to carry it (the compact player; k = 0, whose "Start" line
-  // the full layout writes itself).
-  const hiddenLine = c.hiddenNote && (compact || tl.k === 0) ? <BlindHiddenNote note={c.hiddenNote} /> : null;
+  // Blind: the full layout's narration line carries the hidden-steps sentence;
+  // the compact player has no narration line, so it shows the sentence here.
+  const hiddenLine = c.hiddenNote && compact ? <BlindHiddenNote note={c.hiddenNote} /> : null;
 
   const askPanel =
     area === 'ask' && open ? (

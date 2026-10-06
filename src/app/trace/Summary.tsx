@@ -36,7 +36,7 @@ export function Summary({ module, session, mode, level, input, steps }: SummaryP
         <p className="m-0 text-base text-ink">You watched all {steps} steps. Watching is the fallback: trace it and predict each move.</p>
       ) : (
         <p className="m-0 text-base text-ink" data-testid="score">
-          {scoreLine(asked, right) ?? 'No questions at this level.'}
+          {scoreLine(asked, right, level) ?? 'No questions at this level.'}
         </p>
       )}
       {groups.length > 0 && (

@@ -1,6 +1,8 @@
 /** A straight edge: BST parent links (keyed by child), recursion-tree links
  *  and graph edges (with the weight at the midpoint). Graph edge marks:
- *  relaxed = pen, tree = solid ink, rejected = dashed rule.
+ *  relaxed = pen, tree = solid ink, rejected = dashed rule. A graph edge's
+ *  weight sits on a surface-coloured tag at `badge` (placed by GraphView so it
+ *  clears nodes and their labels), or at the midpoint.
  *
  *  The line is never re-drawn by animating its x1/y1/x2/y2 attributes (DESIGN
  *  §3a: transforms only). It is a unit line centred on the origin, placed with
@@ -11,6 +13,7 @@
 import * as m from 'motion/react-m';
 import { memo, useState } from 'react';
 import type { FEdgePrim, GEdgePrim, TEdgePrim } from '@/engine/scene';
+import { badgeWidth, BADGE_H } from './edge-badges';
 import { sameProps } from './memo';
 import { useEnterInstant, useTransition } from './MotionMode';
 
@@ -34,7 +37,7 @@ export function edgeGeometry(x1: number, y1: number, x2: number, y2: number, pre
   return { mx: (x1 + x2) / 2, my: (y1 + y2) / 2, angle, length: Math.hypot(x2 - x1, y2 - y1) };
 }
 
-export const Edge = memo(function Edge({ p }: { p: EdgePrim }) {
+export const Edge = memo(function Edge({ p, badge }: { p: EdgePrim; badge?: { x: number; y: number } }) {
   const move = useTransition('move');
   const fade = useTransition('fade');
   const inst = useEnterInstant();
@@ -51,8 +54,8 @@ export const Edge = memo(function Edge({ p }: { p: EdgePrim }) {
         </m.g>
       </m.g>
       {p.kind === 'gedge' && p.w !== null && (
-        <g transform={`translate(${g.mx} ${g.my})`}>
-          <rect x={-9} y={-8} width={18} height={16} rx={3} fill="var(--bg)" />
+        <g transform={`translate(${badge?.x ?? g.mx} ${badge?.y ?? g.my})`} data-badge={p.id}>
+          <rect x={-badgeWidth(p.w) / 2} y={-BADGE_H / 2} width={badgeWidth(p.w)} height={BADGE_H} rx={3} fill="var(--surface)" stroke="var(--rule)" strokeWidth={1} />
           <text y={4} textAnchor="middle" fontSize={11} fill={p.mark === 'rejected' ? 'var(--ink-2)' : 'var(--ink)'}>
             {p.w}
           </text>

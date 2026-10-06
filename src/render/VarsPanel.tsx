@@ -15,12 +15,16 @@ export function VarsPanel({ scene }: { scene: Scene }) {
   return (
     <section data-testid="panel-vars" className="min-w-0 font-mono text-sm">
       <h3 className="mb-1 font-sans text-sm font-medium text-ink-2">Variables</h3>
-      <dl className="m-0 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-0.5 rounded-sm border border-rule bg-surface px-2 py-1.5">
-        {rows.length === 0 && <dd className="col-span-2 m-0 text-ink-2">none yet</dd>}
-        {rows.map((r) => (
-          <VarRow key={r.id} id={r.id} name={r.label} value={r.text ?? ''} />
-        ))}
-      </dl>
+      {rows.length === 0 ? (
+        // A <dd> without its <dt> is not a valid list: the empty state is a line.
+        <p className="m-0 rounded-sm border border-rule bg-surface px-2 py-1.5 text-ink-2">none yet</p>
+      ) : (
+        <dl className="m-0 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-0.5 rounded-sm border border-rule bg-surface px-2 py-1.5">
+          {rows.map((r) => (
+            <VarRow key={r.id} id={r.id} name={r.label} value={r.text ?? ''} />
+          ))}
+        </dl>
+      )}
     </section>
   );
 }

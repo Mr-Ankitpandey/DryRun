@@ -34,6 +34,8 @@ export function TraceControls({ c, compact, onHelp }: { c: TraceController; comp
         length={tl.length}
         k={tl.k}
         gate={tl.gate}
+        // Blind: the gate is the frozen point, so name the real pending ask.
+        {...(c.blind ? { pending: c.pending?.askIndex ?? null } : {})}
         phases={c.phases}
         asks={session.askIndices}
         right={c.right}

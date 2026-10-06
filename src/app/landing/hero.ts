@@ -2,8 +2,8 @@
  *  hero traces, where "Keep tracing" goes, what the finish line says, and
  *  whether the returning learner sees the welcome block instead. */
 
-import type { BinarySearchInput } from '@/algorithms/binary-search';
-import { binarySearch } from '@/algorithms/binary-search';
+import type { BinarySearchInput } from '@/algorithms/binary-search/core';
+import { binarySearchCore as binarySearch } from '@/algorithms/binary-search/core';
 import type { AlgorithmModule } from '@/algorithms/types';
 import type { ReviewItem } from '@/lib/storage';
 import { traceUrl } from '@/lib/url';

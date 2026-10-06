@@ -1,5 +1,6 @@
 /** A graph node: circle with its label and, below, its text (e.g. the current
- *  distance). Frontier = dashed teal ring, visited = dotted fill, settled =
+ *  distance, exactly as the algorithm labelled it: Dijkstra writes "∞"
+ *  itself; an unlabelled node shows nothing). Frontier = dashed teal ring, visited = dotted fill, settled =
  *  solid ink + tick; a skipped node shows a small "stale" tag. */
 
 import { memo } from 'react';
@@ -26,9 +27,11 @@ export const GNode = memo(function GNode({ p }: { p: GNodePrim }) {
           <text y={5} textAnchor="middle" fontSize={14} fill={s.textFill}>
             {p.label}
           </text>
-          <text y={r + 14} textAnchor="middle" fontSize={11} fill="var(--ink-2)">
-            {p.text ?? '∞'}
-          </text>
+          {p.text !== null && (
+            <text y={r + 14} textAnchor="middle" fontSize={11} fill="var(--ink-2)">
+              {p.text}
+            </text>
+          )}
           {p.skipped && (
             <text y={-r - 6} textAnchor="middle" fontSize={9} fill="var(--ink-2)">
               stale

@@ -80,11 +80,11 @@ export function EditInput({ module, input, mode, level, onNavigate, onClose }: E
         )}
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-ink">Questions</span>
-          <Segmented label="Level" size="sm" value={lvl} onChange={setLvl} options={[{ value: 'guided', label: 'Guided' }, { value: 'full', label: 'Full' }]} />
+          <Segmented label="Level" value={lvl} onChange={setLvl} options={[{ value: 'guided', label: 'Guided' }, { value: 'full', label: 'Full' }, { value: 'blind', label: 'Blind' }]} />
         </div>
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-ink">Mode</span>
-          <Segmented label="Mode" size="sm" value={md} onChange={setMd} options={[{ value: 'trace', label: 'Trace' }, { value: 'watch', label: 'Watch' }]} />
+          <Segmented label="Mode" value={md} onChange={setMd} options={[{ value: 'trace', label: 'Trace' }, { value: 'watch', label: 'Watch' }]} />
         </div>
       </div>
 

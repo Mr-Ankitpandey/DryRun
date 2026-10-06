@@ -1,18 +1,28 @@
 /** One SVG with every view a scene can contain, in stacking order, plus an
  *  optional overlay drawn on top in the same coordinates (the trace layer's
- *  pick targets, ghost and correct ring). */
+ *  pick targets, ghost and correct ring).
+ *
+ *  Arrays and connectors are always here. The recursion tree, BST, graph and
+ *  DP grid views are one lazily loaded chunk (./structure-views), fetched only
+ *  when the layout has one of them, so the landing's array-only hero stays
+ *  small. They mount settled (no fade-in for what is on screen when they
+ *  arrive), like everything present at a stage's first render. */
 
+import { Suspense, lazy } from 'react';
 import type { ReactNode } from 'react';
 import type { Layout } from '@/engine/layout';
 import type { Scene } from '@/engine/scene';
 import { ArrayView } from './ArrayView';
-import { GraphView } from './GraphView';
-import { GRID_LABEL_FONT, GridView } from './GridView';
-import { monoWidth } from './labels';
+import { GRID_LABEL_FONT, gridLabelWidth } from './labels';
 import { Links } from './Links';
-import { RecursionTree } from './RecursionTree';
+import { Settled } from './MotionMode';
 import { Stage } from './Stage';
-import { TreeView } from './TreeView';
+
+const views = () => import('./structure-views');
+const RecursionTree = lazy(() => views().then((m) => ({ default: m.RecursionTree })));
+const TreeView = lazy(() => views().then((m) => ({ default: m.TreeView })));
+const GraphView = lazy(() => views().then((m) => ({ default: m.GraphView })));
+const GridView = lazy(() => views().then((m) => ({ default: m.GridView })));
 
 export interface SceneViewProps {
   scene: Scene;
@@ -29,7 +39,7 @@ export interface SceneViewProps {
 export function gridOverhang(layout: Layout): number {
   const g = layout.grid;
   if (!g) return 0;
-  const longest = Math.max(0, ...g.rowLabels.map((l) => monoWidth(l, GRID_LABEL_FONT)));
+  const longest = Math.max(0, ...g.rowLabels.map((l) => gridLabelWidth(l, GRID_LABEL_FONT)));
   return Math.ceil(Math.max(0, longest - (g.x0 - 8) + 6));
 }
 
@@ -37,10 +47,16 @@ export function SceneView({ scene, layout, label, overlay, interactive = false, 
   return (
     <Stage scene={scene} label={label} interactive={interactive} extendLeft={gridOverhang(layout)} maxHeight={maxHeight} {...(minWidth !== undefined ? { minWidth } : {})} {...(maxScale !== undefined ? { maxScale } : {})}>
       <ArrayView scene={scene} layout={layout} />
-      <RecursionTree scene={scene} />
-      <TreeView scene={scene} />
-      <GraphView scene={scene} />
-      <GridView scene={scene} layout={layout} />
+      {(layout.recursion || layout.tree || layout.graph || layout.grid) && (
+        <Suspense fallback={null}>
+          <Settled>
+            {layout.recursion && <RecursionTree scene={scene} />}
+            {layout.tree && <TreeView scene={scene} />}
+            {layout.graph && <GraphView scene={scene} />}
+            {layout.grid && <GridView scene={scene} layout={layout} />}
+          </Settled>
+        </Suspense>
+      )}
       <Links scene={scene} />
       {overlay}
     </Stage>

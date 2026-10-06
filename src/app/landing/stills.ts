@@ -3,8 +3,8 @@
  *  first ask, the state right after the hero's second ask with a real
  *  distractor as the ghost, and a fresh seeded input at its first ask. Pure. */
 
-import { binarySearch } from '@/algorithms/binary-search';
-import type { BinarySearchInput } from '@/algorithms/binary-search';
+import { binarySearchCore as binarySearch } from '@/algorithms/binary-search/core';
+import type { BinarySearchInput } from '@/algorithms/binary-search/core';
 import type { Id } from '@/engine/events';
 import type { Layout } from '@/engine/layout';
 import { computeLayout } from '@/engine/layout';

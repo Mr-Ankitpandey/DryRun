@@ -24,3 +24,20 @@ export function frameLabel(sceneLabel: string, width: number, fontSize: number, 
   for (const c of candidates) if (monoWidth(c, fontSize) <= room) return c;
   return candidates[candidates.length - 1] as string;
 }
+
+/** Font size of DP grid row and column labels (scene units): 13, so they stay
+ *  ≥ 11 CSS px on a 360 px phone (the phone layout draws at ~0.88×). */
+export const GRID_LABEL_FONT = 13;
+
+/** A grid row label as one or two lines: a trailing parenthetical ("item 2
+ *  (3, 4)": weight and value) goes on its own line, so the label column stays
+ *  narrow and the text can stay large enough to read on a phone. */
+export function gridLabelLines(label: string): string[] {
+  const m = /^(.*\S)\s+(\([^()]*\))$/.exec(label);
+  return m ? [m[1] as string, m[2] as string] : [label];
+}
+
+/** Widest line of a grid row label, in scene units. */
+export function gridLabelWidth(label: string, fontSize: number): number {
+  return Math.max(0, ...gridLabelLines(label).map((l) => monoWidth(l, fontSize)));
+}

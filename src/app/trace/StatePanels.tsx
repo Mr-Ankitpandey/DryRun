@@ -1,6 +1,7 @@
 /** The data structures a module declares, next to the stage: variables, then
  *  every stack / queue / priority queue, the call stack when the algorithm
- *  recurses and the distance table for graphs. */
+ *  recurses and the distance table for graphs (discovery / finish times for
+ *  DFS, whose node labels are "d/f"). */
 
 import type { Scene } from '@/engine/scene';
 import type { State } from '@/engine/state';
@@ -11,7 +12,13 @@ import { QueuePanel } from '@/render/QueuePanel';
 import { StackPanel } from '@/render/StackPanel';
 import { VarsPanel } from '@/render/VarsPanel';
 
-export function StatePanels({ state, scene }: { state: State; scene: Scene }) {
+/** Node-table wording per algorithm; distances by default. */
+const NODE_TABLE: Record<string, { title: string; column: string }> = {
+  dfs: { title: 'Times', column: 'd / f' },
+};
+
+export function StatePanels({ state, scene, algorithm }: { state: State; scene: Scene; algorithm?: string }) {
+  const table = (algorithm !== undefined ? NODE_TABLE[algorithm] : undefined) ?? {};
   return (
     <div className="flex min-w-0 flex-col gap-4">
       {Object.entries(state.panels).map(([name, p]) => {
@@ -21,7 +28,7 @@ export function StatePanels({ state, scene }: { state: State; scene: Scene }) {
         return null;
       })}
       {Object.keys(state.frames).length > 0 && <CallStackPanel scene={scene} />}
-      {state.graph && <DistTable scene={scene} />}
+      {state.graph && <DistTable scene={scene} {...table} />}
       <VarsPanel scene={scene} />
     </div>
   );

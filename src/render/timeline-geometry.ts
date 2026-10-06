@@ -44,3 +44,32 @@ export function phaseRuns(phases: readonly (string | undefined)[]): PhaseRun[] {
   });
   return runs;
 }
+
+/** Draw every `stride`-th step tick so ticks stay at least `minGap` px apart
+ *  (1, 2, 5, 10, 20, 50, …). Ask marks are drawn regardless. */
+export function tickStride(length: number, width: number, minGap = 6, pad = TIMELINE_PAD): number {
+  const span = Math.max(1, width - 2 * pad);
+  if (length <= 0) return 1;
+  const gap = span / length;
+  for (let base = 1; ; base *= 10) {
+    for (const f of [1, 2, 5]) {
+      const s = base * f;
+      if (gap * s >= minGap || s >= length) return Math.min(s, length);
+    }
+  }
+}
+
+/** Half-width of an ask mark: 4 px, narrower when asks sit closer than 9 px
+ *  so neighbours never merge into one blob (never below 1.5 px). */
+export function askMarkHalf(asks: readonly number[], length: number, width: number, pad = TIMELINE_PAD): number {
+  if (asks.length < 2 || length <= 0) return 4;
+  const sorted = [...asks].sort((a, b) => a - b);
+  let minStep = Infinity;
+  for (let i = 1; i < sorted.length; i++) {
+    const d = (sorted[i] as number) - (sorted[i - 1] as number);
+    if (d > 0) minStep = Math.min(minStep, d);
+  }
+  if (!Number.isFinite(minStep)) return 4;
+  const gapPx = (minStep / length) * Math.max(0, width - 2 * pad);
+  return Math.max(1.5, Math.min(4, gapPx / 2 - 0.75));
+}

@@ -1,8 +1,10 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
+import * as m from 'motion/react-m';
 import { useEffect, useId, useRef } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { cx } from './cx';
 import { useTransition } from './motion';
+import { useMotionReady } from './MotionRoot';
 
 export interface DialogProps {
   open: boolean;
@@ -27,6 +29,7 @@ export function Dialog({ open, onClose, title, children, actions, size = 'md', c
   const titleId = useId();
   const scrim = useTransition('xs');
   const panel = useTransition('settle');
+  const ready = useMotionReady();
 
   useEffect(() => {
     if (!open) return;
@@ -70,9 +73,9 @@ export function Dialog({ open, onClose, title, children, actions, size = 'md', c
   return (
     <AnimatePresence>
       {open ? (
-        <motion.div
+        <m.div
           key="scrim"
-          initial={{ opacity: 0 }}
+          initial={ready ? { opacity: 0 } : false}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={scrim}
@@ -81,14 +84,14 @@ export function Dialog({ open, onClose, title, children, actions, size = 'md', c
             if (e.target === e.currentTarget) onClose();
           }}
         >
-          <motion.div
+          <m.div
             ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
             onKeyDown={onKeyDown}
-            initial={{ opacity: 0, y: 12 }}
+            initial={ready ? { opacity: 0, y: 12 } : false}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 12 }}
             transition={panel}
@@ -103,8 +106,8 @@ export function Dialog({ open, onClose, title, children, actions, size = 'md', c
             </h2>
             <div className="mt-3 text-base text-ink">{children}</div>
             {actions ? <div className="mt-6 flex flex-wrap justify-end gap-2">{actions}</div> : null}
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       ) : null}
     </AnimatePresence>
   );

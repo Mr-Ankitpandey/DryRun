@@ -5,7 +5,8 @@ export type ButtonVariant = 'primary' | 'quiet' | 'danger';
 
 export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
   variant?: ButtonVariant;
-  /** `md` is the default 44 px tap target; `sm` (36 px) only inside dense rows. */
+  /** `md` is the default 44 px tap target; `sm` (36 px) only inside dense
+   *  rows, and still 44 px on touch screens (coarse pointer). */
   size?: 'md' | 'sm';
   /** Optional leading icon (16 px). */
   icon?: ReactNode;
@@ -19,7 +20,7 @@ const base =
 
 const sizes = {
   md: 'h-11 min-w-11 px-4 text-base',
-  sm: 'h-9 min-w-9 px-3 text-sm',
+  sm: 'h-9 min-w-9 px-3 text-sm pointer-coarse:h-11 pointer-coarse:min-w-11',
 } as const;
 
 const variants: Record<ButtonVariant, string> = {

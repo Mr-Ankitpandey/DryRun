@@ -23,7 +23,8 @@ export function TopBar({ title, children, end, wordmarkHref = '/', className }: 
         className,
       )}
     >
-      <Link href={wordmarkHref} className="font-display shrink-0 rounded-xs text-xl leading-none">
+      {/* 44 px tall so the wordmark is a full tap target on phones. */}
+      <Link href={wordmarkHref} className="font-display inline-flex h-11 shrink-0 items-center rounded-xs text-xl leading-none">
         DryRun
       </Link>
       {title ? (

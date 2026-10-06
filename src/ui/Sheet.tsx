@@ -1,8 +1,10 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
+import * as m from 'motion/react-m';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { cx } from './cx';
 import { useTransition } from './motion';
+import { useMotionReady } from './MotionRoot';
 import { DESKTOP_QUERY, useMediaQuery } from './useMediaQuery';
 
 export interface SheetProps {
@@ -25,6 +27,7 @@ export function Sheet({ open, title, showTitle = false, children, onClose, mode 
   const desktop = useMediaQuery(DESKTOP_QUERY);
   const asPanel = mode === 'panel' || (mode === 'auto' && desktop);
   const t = useTransition('sheet');
+  const ready = useMotionReady();
   const titleId = useId();
 
   const header =
@@ -58,10 +61,10 @@ export function Sheet({ open, title, showTitle = false, children, onClose, mode 
     <AnimatePresence initial={false}>
       {open ? (
         asPanel ? (
-          <motion.section
+          <m.section
             key="panel"
             {...aria}
-            initial={{ opacity: 0, y: 12 }}
+            initial={ready ? { opacity: 0, y: 12 } : false}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 12 }}
             transition={t}
@@ -69,12 +72,12 @@ export function Sheet({ open, title, showTitle = false, children, onClose, mode 
           >
             {header}
             {children}
-          </motion.section>
+          </m.section>
         ) : (
-          <motion.section
+          <m.section
             key="sheet"
             {...aria}
-            initial={{ y: '100%' }}
+            initial={ready ? { y: '100%' } : false}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={t}
@@ -87,7 +90,7 @@ export function Sheet({ open, title, showTitle = false, children, onClose, mode 
             <span aria-hidden="true" className="mx-auto mb-3 block h-1 w-10 rounded-xs bg-rule" />
             {header}
             {children}
-          </motion.section>
+          </m.section>
         )
       ) : null}
     </AnimatePresence>

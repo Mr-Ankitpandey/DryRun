@@ -8,17 +8,27 @@
  *  Drag anywhere on the strip to scrub (pointer capture; `scrub` actions make
  *  every transition instant); click to jump. Keyboard: it is a slider (Left /
  *  Right step, Home / End, Page Up / Page Down ±10). Nothing here animates:
- *  scrubbing is index changes. */
+ *  scrubbing is index changes.
+ *
+ *  Narrow strips (phones, long runs): step ticks thin out to every 2nd / 5th /
+ *  10th step so they stay ≥ 6 px apart, ask marks are always drawn (narrower
+ *  when they crowd), the strip is 44 px tall on touch screens with a larger
+ *  cursor knob, and while a finger drags, the step number rides above the
+ *  cursor where the finger does not cover it. */
 
 import { memo, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { TICK_PATH } from './marks';
-import { TIMELINE_PAD, kAtX, phaseRuns, timelineX } from './timeline-geometry';
+import { useMediaQuery } from '@/ui/useMediaQuery';
+import { TIMELINE_PAD, askMarkHalf, kAtX, phaseRuns, tickStride, timelineX } from './timeline-geometry';
 
 export interface TimelineProps {
   length: number;
   k: number;
   gate: number | null;
+  /** Step index of the pending ask when it differs from the gate (Blind);
+   *  omitted: the gate is the pending ask. */
+  pending?: number | null;
   /** `phase` of every step, by step index. */
   phases: readonly (string | undefined)[];
   /** Step indices of the asks at this level. */
@@ -35,10 +45,13 @@ export interface TimelineProps {
   height?: number;
 }
 
-export function Timeline({ length, k, gate, phases, asks, right, wrong, onScrub, onScrubEnd, onSeek, onStep, valueText, height = 36 }: TimelineProps) {
+export function Timeline({ length, k, gate, pending, phases, asks, right, wrong, onScrub, onScrubEnd, onSeek, onStep, valueText, height = 36 }: TimelineProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const dragging = useRef(false);
+  const [dragged, setDragged] = useState(false);
+  const coarse = useMediaQuery('(pointer: coarse)');
+  const h = Math.max(height, coarse ? 44 : 32);
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -56,6 +69,7 @@ export function Timeline({ length, k, gate, phases, asks, right, wrong, onScrub,
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     dragging.current = true;
+    setDragged(true);
     e.currentTarget.setPointerCapture(e.pointerId);
     e.currentTarget.focus({ preventScroll: true });
     onScrub(kAt(e));
@@ -66,6 +80,7 @@ export function Timeline({ length, k, gate, phases, asks, right, wrong, onScrub,
   const end = (e: PointerEvent<HTMLDivElement>) => {
     if (!dragging.current) return;
     dragging.current = false;
+    setDragged(false);
     if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
     onScrubEnd();
   };
@@ -105,20 +120,30 @@ export function Timeline({ length, k, gate, phases, asks, right, wrong, onScrub,
       onPointerCancel={end}
       onKeyDown={onKeyDown}
       className="relative min-w-0 flex-1 cursor-pointer rounded-sm select-none"
-      style={{ height: Math.max(height, 32), touchAction: 'pan-y' }}
+      style={{ height: h, touchAction: 'pan-y' }}
     >
       {width > 0 && (
-        <svg width={width} height={Math.max(height, 32)} aria-hidden="true" className="block overflow-visible">
-          <Ticks length={length} width={width} height={Math.max(height, 32)} phases={phases} asks={asks} right={right} wrong={wrong} gate={gate} />
-          <rect x={TIMELINE_PAD} y={Math.max(height, 32) / 2 - 1} width={Math.max(0, cursorX - TIMELINE_PAD)} height={2} fill="var(--ink)" />
+        <svg width={width} height={h} aria-hidden="true" className="block overflow-visible">
+          <Ticks length={length} width={width} height={h} phases={phases} asks={asks} right={right} wrong={wrong} pending={pending === undefined ? gate : pending} />
+          <rect x={TIMELINE_PAD} y={h / 2 - 1} width={Math.max(0, cursorX - TIMELINE_PAD)} height={2} fill="var(--ink)" />
           {gateX !== null && gate !== null && gate < length && (
-            <rect x={gateX} y={4} width={Math.max(0, timelineX(length, length, width) - gateX)} height={Math.max(height, 32) - 8} fill="var(--surface)" opacity={0.6} />
+            <rect x={gateX} y={4} width={Math.max(0, timelineX(length, length, width) - gateX)} height={h - 8} fill="var(--surface)" opacity={0.6} />
           )}
           <g transform={`translate(${cursorX} 0)`} data-testid="timeline-cursor">
-            <line y1={3} y2={Math.max(height, 32) - 3} stroke="var(--pen)" strokeWidth={2} />
-            <circle cy={Math.max(height, 32) / 2} r={5} fill="var(--surface)" stroke="var(--pen)" strokeWidth={2} />
+            <line y1={3} y2={h - 3} stroke="var(--pen)" strokeWidth={2} />
+            <circle cy={h / 2} r={coarse ? 8 : 5} fill="var(--surface)" stroke="var(--pen)" strokeWidth={2} />
           </g>
         </svg>
+      )}
+      {dragged && width > 0 && (
+        <span
+          aria-hidden="true"
+          data-testid="timeline-bubble"
+          className="pointer-events-none absolute bottom-full mb-1 -translate-x-1/2 rounded-xs bg-ink px-1.5 py-0.5 font-mono text-sm leading-none text-bg tabular-nums"
+          style={{ left: Math.min(Math.max(cursorX, 24), width - 24) }}
+        >
+          {k}
+        </span>
       )}
     </div>
   );
@@ -134,7 +159,7 @@ const Ticks = memo(function Ticks({
   asks,
   right,
   wrong,
-  gate,
+  pending,
 }: {
   length: number;
   width: number;
@@ -143,19 +168,22 @@ const Ticks = memo(function Ticks({
   asks: readonly number[];
   right: readonly number[];
   wrong: readonly number[];
-  gate: number | null;
+  pending: number | null;
 }) {
   const mid = height / 2;
   const x = (k: number) => timelineX(k, length, width);
-  const dense = length > 0 && (width - 2 * TIMELINE_PAD) / length < 4;
+  const stride = tickStride(length, width);
+  const half = askMarkHalf(asks, length, width);
   const runs = phaseRuns(phases);
   const rightSet = new Set(right);
   const wrongSet = new Set(wrong);
   return (
     <g>
       <line x1={TIMELINE_PAD} x2={width - TIMELINE_PAD} y1={mid} y2={mid} stroke="var(--rule)" strokeWidth={2} />
-      {!dense &&
-        Array.from({ length }, (_, i) => <line key={i} x1={x(i + 1)} x2={x(i + 1)} y1={mid - 4} y2={mid + 4} stroke="var(--rule)" strokeWidth={1} />)}
+      {Array.from({ length: Math.floor(length / stride) }, (_, i) => {
+        const t = (i + 1) * stride;
+        return <line key={t} x1={x(t)} x2={x(t)} y1={mid - 4} y2={mid + 4} stroke="var(--rule)" strokeWidth={1} />;
+      })}
       {runs.map((r) => (
         <rect key={`${r.from}`} x={x(r.from) + 1} y={height - 5} width={Math.max(0, x(r.to) - x(r.from) - 2)} height={3} fill={r.index % 2 === 0 ? 'var(--ink-2)' : 'var(--rule)'}>
           <title>{r.phase}</title>
@@ -166,11 +194,11 @@ const Ticks = memo(function Ticks({
         const y = 7;
         if (wrongSet.has(a))
           return (
-            <path key={a} data-mark="wrong" d={`M${ax - 3.5} ${y - 3.5} L${ax + 3.5} ${y + 3.5} M${ax + 3.5} ${y - 3.5} L${ax - 3.5} ${y + 3.5}`} stroke="var(--red)" strokeWidth={2} strokeLinecap="round" />
+            <path key={a} data-mark="wrong" d={`M${ax - half + 0.5} ${y - 3.5} L${ax + half - 0.5} ${y + 3.5} M${ax + half - 0.5} ${y - 3.5} L${ax - half + 0.5} ${y + 3.5}`} stroke="var(--red)" strokeWidth={2} strokeLinecap="round" />
           );
-        if (rightSet.has(a)) return <path key={a} data-mark="right" d={TICK_PATH} transform={`translate(${ax - 5} ${y - 4})`} fill="none" stroke="var(--green)" strokeWidth={1.75} />;
-        const pending = a === gate;
-        return <path key={a} data-mark={pending ? 'pending' : 'ask'} d={`M${ax} ${y - 4} L${ax + 4} ${y} L${ax} ${y + 4} L${ax - 4} ${y} Z`} fill={pending ? 'var(--pen)' : 'var(--surface)'} stroke={pending ? 'var(--pen)' : 'var(--ink-2)'} strokeWidth={1.25} />;
+        if (rightSet.has(a)) return <path key={a} data-mark="right" d={TICK_PATH} transform={`translate(${ax - (5 * half) / 4} ${y - 4}) scale(${half / 4} 1)`} fill="none" stroke="var(--green)" strokeWidth={1.75} vectorEffect="non-scaling-stroke" />;
+        const on = a === pending;
+        return <path key={a} data-mark={on ? 'pending' : 'ask'} d={`M${ax} ${y - 4} L${ax + half} ${y} L${ax} ${y + 4} L${ax - half} ${y} Z`} fill={on ? 'var(--pen)' : 'var(--surface)'} stroke={on ? 'var(--pen)' : 'var(--ink-2)'} strokeWidth={1.25} />;
       })}
     </g>
   );
