@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "ad": "mkdir -p .scratch/ad-tmp && TMPDIR=$PWD/.scratch/ad-tmp node marketing/ad/render.mjs"
   },
   "engines": {
     "node": ">=20.19.0"
@@ -30,6 +31,9 @@
     "@axe-core/playwright": "4.13.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.63.0",
+    "@remotion/bundler": "4.0.534",
+    "@remotion/player": "4.0.534",
+    "@remotion/renderer": "4.0.534",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "20.19.0",
     "@types/react": "19.3.0",
@@ -38,6 +42,7 @@
     "eslint": "10.11.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "fast-check": "4.10.2",
+    "remotion": "4.0.534",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3",
     "typescript-eslint": "8.70.1",

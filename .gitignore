@@ -10,3 +10,6 @@ test-results/
 playwright-report/
 .env
 .env.*
+marketing/ad/out/
+# Music is licensed for use, not for redistribution in a public repo.
+marketing/ad/public/*.mp3
