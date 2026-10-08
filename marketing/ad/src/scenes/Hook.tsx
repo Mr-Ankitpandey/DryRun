@@ -1,62 +1,42 @@
-/** Beats 1–2 (6 s), one continuous stage: the real binary-search question,
- *  a wrong tap, the ghost of the guess, the real move and the real rule. */
+/** 0–4 s, ink. The hook: two kinetic lines on the dark board, with the real
+ *  binary-search array rising faintly underneath as a promise of what follows. */
 
 import { interpolate, useCurrentFrame } from 'remotion';
 import { binarySearch } from '@/algorithms/binary-search';
 import { AdStage } from '../components/AdStage';
-import { BEAT, Beat } from '../components/Beat';
-import { FadeGhost, FadeRing, Tap } from '../components/Marks';
+import { Corner, Page, display, useWide } from '../components/Beat';
+import { Kinetic } from '../components/Kinetic';
 import { boundsOf } from '../lib/bounds';
-import { findStep, presetInput, traceOf } from '../lib/trace';
-import { ease, tweenScene } from '../lib/tween';
+import { presetInput, traceOf } from '../lib/trace';
 
 const t = traceOf(binarySearch, presetInput(binarySearch, 'basic'));
-
-function setup() {
-  // The first "Where does mid land?" question, as the app asks it.
-  const g = findStep(t, (s) => s.ask?.kind === 'pick');
-  const ask = t.steps[g]?.ask;
-  if (!ask || ask.kind !== 'pick') throw new Error('ad: hook ask missing');
-  const wrong = ask.distractors[0];
-  const before = t.scenes[g];
-  const after = t.scenes[g + 1];
-  if (!wrong || !before || !after) throw new Error('ad: hook data missing');
-  return { answer: ask.answer, wrong, before, after };
+function firstScene() {
+  const s = t.scenes[0];
+  if (!s) throw new Error('ad: hook scene missing');
+  return s;
 }
-const { answer, wrong, before, after } = setup();
-const bounds = boundsOf([before, after]);
-
-const TAP = 34;
-const MOVE = [52, 72] as const;
+const first = firstScene();
+const bounds = boundsOf([first]);
 
 export function Hook() {
   const frame = useCurrentFrame();
-  const p = ease(interpolate(frame, MOVE, [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
-  const scene = tweenScene(before, after, p);
-  const appear = interpolate(frame, [0, 10], [0, 1], { extrapolateRight: 'clamp' });
-  const second = frame >= BEAT;
-
+  const wide = useWide();
+  const ghost = interpolate(frame, [40, 100], [0, 0.32], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const big = { ...display, color: 'var(--ink)', fontSize: wide ? 96 : 104 };
   return (
-    <Beat
-      headline={second ? 'Wrong? Your guess stays.' : <>Binary search for 42.<br />Where does mid go next?</>}
-      riseAt={second ? BEAT : 0}
-      sub={second ? <span style={{ color: 'var(--red)' }}>{wrong.rule}</span> : undefined}
-      visual={
-        <div style={{ opacity: appear, transform: `translateY(${(1 - appear) * 24}px)` }}>
-          <AdStage
-            scene={scene}
-            layout={t.layout}
-            bounds={bounds}
-            overlay={
-              <>
-                <Tap scene={before} id={wrong.answer} at={TAP} />
-                <FadeGhost scene={before} id={wrong.answer} from={TAP + 6} />
-                <FadeRing scene={after} id={answer} from={MOVE[1] - 4} tone="truth" />
-              </>
-            }
-          />
-        </div>
-      }
-    />
+    <Page tone="ink" wipe={false}>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: wide ? '0 160px' : '0 72px', gap: wide ? 40 : 56 }}>
+        <h1 style={{ ...big, color: 'var(--ink-2)', fontSize: 64 }}>
+          <Kinetic text={wide ? "You've watched binary search\na dozen times." : "You've watched\nbinary search\na dozen times."} at={4} stagger={3} />
+        </h1>
+        <h1 style={big}>
+          <Kinetic text={wide ? 'So where does mid go next?' : 'So where does\nmid go next?'} at={46} stagger={4} />
+        </h1>
+      </div>
+      <div style={{ position: 'absolute', left: wide ? 160 : 72, right: wide ? 160 : 72, bottom: wide ? 70 : 180, opacity: ghost, transform: `translateY(${(0.32 - ghost) * 160}px)` }}>
+        <AdStage scene={first} layout={t.layout} bounds={bounds} />
+      </div>
+      <Corner tone="ink" />
+    </Page>
   );
 }

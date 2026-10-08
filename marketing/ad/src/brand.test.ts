@@ -16,4 +16,10 @@ describe('ad brand tokens', () => {
     const ad = vars(readFileSync('marketing/ad/src/brand.css', 'utf8'), /:root\s*\{([^}]*)\}/);
     for (const [k, v] of Object.entries(app)) expect(ad[k], k).toBe(v);
   });
+
+  it('dark beats use the app dark theme exactly', () => {
+    const app = vars(readFileSync('src/styles/tokens.css', 'utf8'), /\[data-theme='dark'\]\s*\{([^}]*)\}/);
+    const ad = vars(readFileSync('marketing/ad/src/brand.css', 'utf8'), /\.dark\s*\{([^}]*)\}/);
+    for (const [k, v] of Object.entries(app)) expect(ad[k], k).toBe(v);
+  });
 });

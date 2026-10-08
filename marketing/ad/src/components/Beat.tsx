@@ -1,124 +1,130 @@
-/** One beat of the ad: the wordmark, a headline, an optional sub-line and a
- *  visual, laid out for the composition's shape. Vertical (9:16): headline on
- *  top, visual below. Wide (16:9): headline left, visual right. The headline
- *  rises in over the first frames and the beat fades out at its end; nothing
- *  else moves unless the visual moves. */
+/** One beat of the ad. Every beat shares one transition and one grammar:
+ *  - it wipes in from the right over the previous beat, led by a thin edge in
+ *    the accent colour (the previous beat stays underneath; see Ad.tsx overlap);
+ *  - the graph-paper grid drifts slowly, so still frames never feel frozen;
+ *  - the headline is kinetic type; the visual eases up and drifts in scale.
+ *  Tones: 'paper' (light), 'ink' (the app's dark theme), 'pen' (accent field). */
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import { Kinetic } from './Kinetic';
 
-export const BEAT = 90; // frames per beat (3 s at 30 fps)
-const OUT = 8; // frames of fade at the end of a beat
+export const WIPE = 14; // frames of the entering wipe
+
+export type Tone = 'paper' | 'ink' | 'pen';
 
 export function useWide(): boolean {
   const { width, height } = useVideoConfig();
   return width > height;
 }
 
-export function Paper({ children }: { children: ReactNode }) {
+const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
+
+function ease(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+/** Text colour on a tone. On the pen field, text is the surface colour. */
+export function inkOn(tone: Tone): string {
+  return tone === 'pen' ? 'var(--surface)' : 'var(--ink)';
+}
+export function softOn(tone: Tone): string {
+  return tone === 'pen' ? 'color-mix(in srgb, var(--surface) 82%, transparent)' : 'var(--ink-2)';
+}
+
+/** The page of a beat: tone, drifting grid, and the wipe-in with its edge. */
+export function Page({ tone = 'paper', wipe = true, children }: { tone?: Tone; wipe?: boolean; children: ReactNode }) {
+  const frame = useCurrentFrame();
+  const p = wipe ? ease(interpolate(frame, [0, WIPE], [0, 1], clamp)) : 1;
+  const line = tone === 'pen' ? 'color-mix(in srgb, var(--surface) 13%, transparent)' : 'var(--grid)';
+  const bg = tone === 'pen' ? 'var(--pen)' : 'var(--bg)';
+  const edge = tone === 'pen' ? 'var(--ink)' : 'var(--pen)';
   return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: 'var(--bg)',
-        backgroundImage:
-          'linear-gradient(to right, var(--grid) 1px, transparent 1px), linear-gradient(to bottom, var(--grid) 1px, transparent 1px)',
-        backgroundSize: '40px 40px',
-      }}
-    >
+    <AbsoluteFill className={tone === 'ink' ? 'dark' : undefined} style={{ clipPath: `inset(0 0 0 ${(1 - p) * 100}%)` }}>
+      <AbsoluteFill
+        style={{
+          backgroundColor: bg,
+          backgroundImage: `linear-gradient(to right, ${line} 1px, transparent 1px), linear-gradient(to bottom, ${line} 1px, transparent 1px)`,
+          backgroundSize: '40px 40px',
+          backgroundPosition: `${-frame * 0.45}px ${-frame * 0.3}px`,
+        }}
+      />
       {children}
+      {wipe && p < 1 && <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${(1 - p) * 100}%`, width: 12, background: edge }} />}
     </AbsoluteFill>
   );
 }
 
-export function Wordmark({ size = 44 }: { size?: number }) {
-  return <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: size, letterSpacing: '-0.02em', color: 'var(--ink)' }}>DryRun</div>;
+export function Wordmark({ size = 44, color = 'var(--ink)' }: { size?: number; color?: string }) {
+  return <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: size, letterSpacing: '-0.02em', color }}>DryRun</div>;
 }
 
-export interface BeatProps {
-  headline: ReactNode;
-  sub?: ReactNode;
-  visual?: ReactNode;
-  /** Text-only beat: the headline is large and centred in the frame. */
-  card?: boolean;
-  /** Frames to hold before the headline appears. */
-  delay?: number;
-  /** Frame at which the headline (re)rises; set when one beat swaps headlines mid-way. */
-  riseAt?: number;
-  /** Fade out at the end of the beat (false for the final beat). */
-  fadeOut?: boolean;
-}
-
-export function Beat({ headline, sub, visual, card = false, delay = 0, riseAt, fadeOut = true }: BeatProps) {
-  const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
-  const wide = useWide();
-  const at = riseAt ?? delay;
-  const rise = spring({ frame: frame - at, fps, config: { damping: 200 } });
-  const subIn = spring({ frame: frame - at - 8, fps, config: { damping: 200 } });
-  const end = fadeOut ? interpolate(frame, [durationInFrames - OUT, durationInFrames], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }) : 1;
-
-  const headStyle = {
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-    letterSpacing: '-0.02em',
-    lineHeight: 1.04,
-    color: 'var(--ink)',
-    margin: 0,
-    textWrap: 'balance' as const,
-    opacity: rise,
-    transform: `translateY(${(1 - rise) * 28}px)`,
-  };
-  const subStyle = {
-    fontFamily: 'var(--font-ui)',
-    color: 'var(--ink-2)',
-    margin: 0,
-    lineHeight: 1.3,
-    opacity: subIn,
-    transform: `translateY(${(1 - subIn) * 16}px)`,
-  };
-
-  if (card) {
-    return (
-      <Paper>
-        <AbsoluteFill style={{ opacity: end, padding: wide ? '0 220px' : '0 96px', justifyContent: 'center' }}>
-          <h1 style={{ ...headStyle, fontSize: wide ? 120 : 112 }}>{headline}</h1>
-          {sub && <p style={{ ...subStyle, fontSize: wide ? 44 : 44, marginTop: 36 }}>{sub}</p>}
-        </AbsoluteFill>
-        <Corner />
-      </Paper>
-    );
-  }
-
-  return (
-    <Paper>
-      <AbsoluteFill style={{ opacity: end }}>
-        {wide ? (
-          <div style={{ display: 'flex', height: '100%', padding: '150px 110px 110px', gap: 80, alignItems: 'center' }}>
-            <div style={{ flex: '0 0 640px' }}>
-              <h1 style={{ ...headStyle, fontSize: 84 }}>{headline}</h1>
-              {sub && <div style={{ ...subStyle, fontSize: 36, marginTop: 32 }}>{sub}</div>}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>{visual}</div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', padding: '200px 72px 140px' }}>
-            <h1 style={{ ...headStyle, fontSize: 84 }}>{headline}</h1>
-            {sub && <div style={{ ...subStyle, fontSize: 40, marginTop: 30 }}>{sub}</div>}
-            <div style={{ width: '100%', marginTop: 72 }}>{visual}</div>
-          </div>
-        )}
-      </AbsoluteFill>
-      <Corner />
-    </Paper>
-  );
-}
-
-/** The wordmark in the same corner on every beat: the brand is always present, never loud. */
-function Corner() {
+/** The wordmark in the same corner on every beat: present, never loud. */
+export function Corner({ tone = 'paper' }: { tone?: Tone }) {
   const wide = useWide();
   return (
     <div style={{ position: 'absolute', top: wide ? 56 : 88, left: wide ? 110 : 72 }}>
-      <Wordmark size={wide ? 40 : 46} />
+      <Wordmark size={wide ? 40 : 46} color={inkOn(tone)} />
     </div>
+  );
+}
+
+export const display: CSSProperties = {
+  fontFamily: 'var(--font-display)',
+  fontWeight: 700,
+  letterSpacing: '-0.025em',
+  lineHeight: 1.02,
+  margin: 0,
+};
+
+export interface BeatProps {
+  tone?: Tone;
+  /** Kinetic headline; "\n" breaks lines. */
+  headline: string;
+  /** Frame the headline starts (re-keys the words when it changes). */
+  at?: number;
+  sub?: ReactNode;
+  /** Frame the sub-line appears. */
+  subAt?: number;
+  visual?: ReactNode;
+  /** Frame the visual eases in. */
+  visualAt?: number;
+}
+
+export function Beat({ tone = 'paper', headline, at = 6, sub, subAt, visual, visualAt = 4 }: BeatProps) {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const wide = useWide();
+  const subIn = spring({ frame: frame - (subAt ?? at + 14), fps, config: { damping: 200 } });
+  const vIn = spring({ frame: frame - visualAt, fps, config: { damping: 22, stiffness: 120 } });
+  const drift = 1 + 0.025 * (frame / durationInFrames);
+  const head = { ...display, color: inkOn(tone), fontSize: wide ? 76 : 88 };
+  const subStyle: CSSProperties = { fontFamily: 'var(--font-ui)', color: softOn(tone), lineHeight: 1.3, opacity: subIn, transform: `translateY(${(1 - subIn) * 18}px)` };
+  const vis = visual && (
+    <div style={{ opacity: Math.min(1, vIn * 1.4), transform: `translateY(${(1 - vIn) * 60}px) scale(${drift})`, transformOrigin: '50% 50%' }}>{visual}</div>
+  );
+  return (
+    <Page tone={tone}>
+      {wide ? (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', padding: '150px 110px 110px', gap: 80, alignItems: 'center' }}>
+          <div style={{ flex: '0 0 660px' }}>
+            <h1 style={head}>
+              <Kinetic key={`${headline}-${at}`} text={headline} at={at} />
+            </h1>
+            {sub && <div style={{ ...subStyle, fontSize: 36, marginTop: 34 }}>{sub}</div>}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>{vis}</div>
+        </div>
+      ) : (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '210px 72px 140px' }}>
+          <h1 style={head}>
+            <Kinetic key={`${headline}-${at}`} text={headline} at={at} />
+          </h1>
+          {sub && <div style={{ ...subStyle, fontSize: 40, marginTop: 30 }}>{sub}</div>}
+          {vis && <div style={{ width: '100%', marginTop: 72 }}>{vis}</div>}
+        </div>
+      )}
+      <Corner tone={tone} />
+    </Page>
   );
 }

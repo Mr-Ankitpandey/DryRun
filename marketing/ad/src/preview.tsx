@@ -12,9 +12,9 @@ import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { AdProps } from './Ad';
 import { Ad } from './Ad';
-import { DURATION, FPS } from './config';
+import { DURATION, FPS, MUSIC_FILE } from './config';
 
-const MUSIC_URL = '/marketing/ad/public/music.mp3';
+const MUSIC_URL = `/marketing/ad/public/${MUSIC_FILE}`;
 
 /** The Player passes loosely typed props; read them into the ad's own props. */
 function AdFromProps(p: Record<string, unknown>) {
@@ -27,8 +27,12 @@ const SIZES: Record<Cut, { w: number; h: number; label: string }> = {
   wide: { w: 1920, h: 1080, label: 'Wide 16:9 (YouTube, LinkedIn)' },
 };
 
+const params = new URLSearchParams(window.location.search);
+/** `?frame=N` opens paused on frame N; `?cut=wide` opens the wide cut. */
+const START_FRAME = Number(params.get('frame') ?? '0') || 0;
+
 function Preview() {
-  const [cut, setCut] = useState<Cut>('vertical');
+  const [cut, setCut] = useState<Cut>(params.get('cut') === 'wide' ? 'wide' : 'vertical');
   const [music, setMusic] = useState(false);
   useEffect(() => {
     // Only a real audio file counts (the dev server answers unknown paths with HTML).
@@ -43,7 +47,7 @@ function Preview() {
     <main style={{ minHeight: '100dvh', padding: 24, boxSizing: 'border-box', fontFamily: 'var(--font-ui)', color: 'var(--ink)' }}>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, margin: '0 0 4px', letterSpacing: '-0.02em' }}>DryRun ad preview</h1>
       <p style={{ margin: '0 0 16px', color: 'var(--ink-2)' }}>
-        30 seconds, plays live in this page. Music: {music ? 'on (music.mp3 found)' : 'none yet — save a track as marketing/ad/public/music.mp3 and reload'}.
+        45 seconds, plays live in this page. Music: {music ? `on (${MUSIC_FILE})` : `none yet — save a track as marketing/ad/public/${MUSIC_FILE} and reload`}.
       </p>
       <div role="radiogroup" aria-label="Format" style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {(Object.keys(SIZES) as Cut[]).map((c) => (
@@ -77,6 +81,7 @@ function Preview() {
           compositionWidth={size.w}
           compositionHeight={size.h}
           style={{ width: '100%' }}
+          initialFrame={START_FRAME}
           controls
           loop
           clickToPlay

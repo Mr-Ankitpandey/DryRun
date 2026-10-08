@@ -1,7 +1,7 @@
-/** Beat 4: Dijkstra's honest moment, a stale queue entry. The real question,
- *  answered correctly: the green ring draws on the stale node. */
+/** 13–17 s, paper. Dijkstra's honest moment, a stale queue entry: the real
+ *  question, answered right; the green ring draws on the stale node. */
 
-import { interpolate, useCurrentFrame } from 'remotion';
+import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { dijkstra } from '@/algorithms/dijkstra';
 import { AdStage } from '../components/AdStage';
 import { Beat } from '../components/Beat';
@@ -25,24 +25,45 @@ function setup() {
 }
 const { prompt, nodeId, from, at, after } = setup();
 const bounds = boundsOf([from, at, after]);
+const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 
 export function Predict() {
   const frame = useCurrentFrame();
-  const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
-  const a = ease(interpolate(frame, [6, 22], [0, 1], clamp));
-  const b = ease(interpolate(frame, [44, 60], [0, 1], clamp));
-  const scene = frame < 44 ? tweenScene(from, at, a) : tweenScene(at, after, b);
-  const yes = interpolate(frame, [30, 38], [0, 1], clamp);
+  const { fps } = useVideoConfig();
+  const a = ease(interpolate(frame, [10, 26], [0, 1], clamp));
+  const b = ease(interpolate(frame, [62, 80], [0, 1], clamp));
+  const scene = frame < 62 ? tweenScene(from, at, a) : tweenScene(at, after, b);
+  const yes = spring({ frame: frame - 46, fps, config: { damping: 14, stiffness: 180 } });
   return (
     <Beat
       headline="Predict every step."
       sub={
         <>
           <div>{prompt}</div>
-          <div style={{ marginTop: 14, opacity: yes, color: 'var(--green)', fontWeight: 600 }}>✓ Yes, skip it.</div>
+          <div
+            style={{
+              marginTop: 16,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '8px 20px',
+              borderRadius: 999,
+              background: 'var(--green)',
+              color: 'var(--surface)',
+              fontWeight: 600,
+              transform: `scale(${0.6 + 0.4 * yes})`,
+              transformOrigin: 'left center',
+              opacity: Math.min(1, yes * 2),
+            }}
+          >
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12.5l4.5 4.5L19 7.5" />
+            </svg>
+            Yes. It is stale, skip it.
+          </div>
         </>
       }
-      visual={<AdStage scene={scene} layout={t.layout} bounds={bounds} overlay={<FadeRing scene={after} id={nodeId} from={52} />} />}
+      visual={<AdStage scene={scene} layout={t.layout} bounds={bounds} overlay={<FadeRing scene={after} id={nodeId} from={72} />} />}
     />
   );
 }

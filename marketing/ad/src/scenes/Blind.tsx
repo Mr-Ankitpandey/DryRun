@@ -1,5 +1,6 @@
-/** Beat 6: Blind mode. The stage stays frozen while steps run hidden (the
- *  app's own sentence), then the hidden steps replay quickly. */
+/** 21–25 s, ink (the app's dark theme). Blind mode: the stage freezes inside a
+ *  dashed frame while steps run hidden (the app's own sentence), then the
+ *  hidden steps replay. */
 
 import { interpolate, useCurrentFrame } from 'remotion';
 import { quickSort } from '@/algorithms/quick-sort';
@@ -11,10 +12,10 @@ import { findStep, presetInput, traceOf } from '../lib/trace';
 import { ease, tweenScene } from '../lib/tween';
 
 const t = traceOf(quickSort, presetInput(quickSort, 'random'));
-// Freeze just before the first swap of the first partition; four steps run hidden.
 const HIDDEN = 4;
+// Freeze just before the first swap of the first partition.
 const F = Math.max(0, findStep(t, (s) => s.events.some((e) => e.t === 'swap')) - 1);
-const REPLAY = [44, 78] as const;
+const REPLAY = [64, 104] as const;
 const bounds = boundsOf(t.scenes.slice(F, F + HIDDEN + 1));
 
 export function Blind() {
@@ -28,11 +29,11 @@ export function Blind() {
   const frozen = frame < REPLAY[0];
   return (
     <Beat
-      headline={<>Blind mode.<br />Trace it in your head.</>}
+      tone="ink"
+      headline={'Blind mode.\nTrace it in your head.'}
       sub={frozen ? hiddenSentence(HIDDEN) : 'Then watch what really happened.'}
-      visual={
-        <AdStage scene={scene} layout={t.layout} bounds={bounds} frozen={frozen} />
-      }
+      subAt={frozen ? 22 : REPLAY[0]}
+      visual={<AdStage scene={scene} layout={t.layout} bounds={bounds} frozen={frozen} />}
     />
   );
 }

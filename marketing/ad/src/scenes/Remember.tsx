@@ -1,5 +1,6 @@
-/** Beat 8: mistakes are marked on the timeline, then the review line the app
- *  shows when re-traces are due (produced by the real welcomeLine). */
+/** 28.5–32.5 s, paper. Answers land on the timeline (ticks and red crosses
+ *  pop in as the cursor passes), then the review line the app shows when
+ *  re-traces are due (produced by the real welcomeLine). */
 
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { welcomeLine } from '@/learn/scheduler';
@@ -7,7 +8,6 @@ import { Beat } from '../components/Beat';
 
 const W = 900;
 const TICKS = 24;
-// Asked questions along the run: true = right, false = a mistake (red ×).
 const ASKS: [number, boolean][] = [
   [2, true],
   [5, true],
@@ -27,40 +27,45 @@ const line = welcomeLine(due, 4) ?? '';
 export function Remember() {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
-  const cursor = interpolate(frame, [4, 40], [0, TICKS - 1], clamp);
+  const cursor = interpolate(frame, [10, 56], [0, TICKS - 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const x = (i: number) => 30 + (i * (W - 60)) / (TICKS - 1);
-  const card = spring({ frame: frame - 44, fps, config: { damping: 200 } });
+  const card = spring({ frame: frame - 62, fps, config: { damping: 18, stiffness: 140 } });
   return (
     <Beat
-      headline={<>Your mistakes come back.<br />On new inputs.</>}
+      headline={'Your mistakes\ncome back.'}
+      sub="On inputs you have not seen, until you get them right."
       visual={
         <div>
-          <svg viewBox={`0 0 ${W} 120`} width="100%" style={{ display: 'block', fontFamily: 'var(--font-mono)' }}>
-            <line x1={30} x2={W - 30} y1={78} y2={78} stroke="var(--rule)" strokeWidth={3} />
-            <line x1={30} x2={x(cursor)} y1={78} y2={78} stroke="var(--ink)" strokeWidth={4} />
+          <svg viewBox={`0 0 ${W} 130`} width="100%" style={{ display: 'block' }}>
+            <line x1={30} x2={W - 30} y1={88} y2={88} stroke="var(--rule)" strokeWidth={4} />
+            <line x1={30} x2={x(cursor)} y1={88} y2={88} stroke="var(--ink)" strokeWidth={5} />
             {Array.from({ length: TICKS }, (_, i) => (
-              <line key={i} x1={x(i)} x2={x(i)} y1={70} y2={86} stroke="var(--rule)" strokeWidth={2} />
+              <line key={i} x1={x(i)} x2={x(i)} y1={80} y2={96} stroke="var(--rule)" strokeWidth={2} />
             ))}
-            {ASKS.map(([i, ok]) =>
-              cursor >= i ? (
-                ok ? (
-                  <path key={i} d={`M${x(i) - 8} 38 l6 7 l12 -14`} fill="none" stroke="var(--green)" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" />
-                ) : (
-                  <path key={i} d={`M${x(i) - 9} 30 l18 18 M${x(i) + 9} 30 l-18 18`} stroke="var(--red)" strokeWidth={4} strokeLinecap="round" />
-                )
-              ) : (
-                <path key={i} d={`M${x(i)} 30 l9 9 l-9 9 l-9 -9 z`} fill="none" stroke="var(--ink-2)" strokeWidth={2} />
-              ),
-            )}
-            <circle cx={x(cursor)} cy={78} r={12} fill="var(--surface)" stroke="var(--pen)" strokeWidth={4} />
+            {ASKS.map(([i, ok]) => {
+              const s = spring({ frame: frame - 10 - (i / (TICKS - 1)) * 46, fps, config: { damping: 12, stiffness: 220 } });
+              const reached = cursor >= i;
+              return (
+                <g key={i} transform={`translate(${x(i)} 44) scale(${reached ? 0.4 + 0.6 * s : 1})`}>
+                  {!reached ? (
+                    <path d="M0 -10 l10 10 l-10 10 l-10 -10 z" fill="none" stroke="var(--ink-2)" strokeWidth={2.5} />
+                  ) : ok ? (
+                    <path d="M-11 0 l7 8 l15 -16" fill="none" stroke="var(--green)" strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
+                  ) : (
+                    <path d="M-10 -10 l20 20 M10 -10 l-20 20" stroke="var(--red)" strokeWidth={5} strokeLinecap="round" />
+                  )}
+                </g>
+              );
+            })}
+            <circle cx={x(cursor)} cy={88} r={14} fill="var(--surface)" stroke="var(--pen)" strokeWidth={5} />
           </svg>
           <div
             style={{
-              marginTop: 48,
+              marginTop: 44,
               background: 'var(--surface)',
               border: '2px solid var(--rule)',
-              borderRadius: 6,
+              borderLeft: '10px solid var(--pen)',
+              borderRadius: 10,
               padding: '28px 32px',
               fontFamily: 'var(--font-display)',
               fontWeight: 700,
@@ -68,8 +73,8 @@ export function Remember() {
               letterSpacing: '-0.02em',
               textWrap: 'balance',
               color: 'var(--ink)',
-              opacity: card,
-              transform: `translateY(${(1 - card) * 24}px)`,
+              opacity: Math.min(1, card * 1.5),
+              transform: `translateY(${(1 - card) * 40}px)`,
             }}
           >
             {line}

@@ -21,6 +21,22 @@
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
 }
 
+/* The app's dark "blackboard" theme, for the ad's ink beats. */
+.dark {
+  --bg: #111820;
+  --grid: #1d2833;
+  --surface: #182231;
+  --ink: #e6ecf2;
+  --ink-2: #93a2b3;
+  --rule: #31404f;
+  --pen: #7da2ff;
+  --amber: #f0a73b;
+  --teal: #3bc4b2;
+  --red: #ff6e6e;
+  --green: #4fc98a;
+  --hatch: #1f2c3c;
+}
+
 html,
 body {
   margin: 0;

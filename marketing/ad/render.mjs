@@ -25,11 +25,12 @@ if (!path.resolve(tmp).startsWith(root)) {
   process.exit(1);
 }
 
-const music = existsSync(path.join(adDir, 'public', 'music.mp3'));
+const MUSIC_FILE = 'admusic.mp3'; // keep in sync with src/config.ts
+const music = existsSync(path.join(adDir, 'public', MUSIC_FILE));
 const [mode = 'video', arg = ''] = process.argv.slice(2);
 const cuts = mode === 'vertical' ? ['DryRunAdVertical'] : mode === 'wide' ? ['DryRunAdWide'] : ['DryRunAdVertical', 'DryRunAdWide'];
 
-console.log(`Bundling… (music: ${music ? 'marketing/ad/public/music.mp3' : 'none — silent render'})`);
+console.log(`Bundling… (music: ${music ? `marketing/ad/public/${MUSIC_FILE}` : 'none — silent render'})`);
 const serveUrl = await bundle({
   entryPoint: path.join(adDir, 'src', 'index.ts'),
   outDir: path.join(root, '.scratch', 'ad-bundle'),

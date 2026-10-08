@@ -25,6 +25,8 @@ export interface AdStageProps {
   overlay?: ReactNode;
   /** Blind mode: the frame is dashed while the stage is frozen. */
   frozen?: boolean;
+  /** Camera: zoom k× towards a point (scene units). */
+  zoom?: { cx: number; cy: number; k: number };
 }
 
 /** Pixel box the stage may fill, by composition shape. */
@@ -33,7 +35,7 @@ function useBox(): { width: number; height: number } {
   return width > height ? { width: 980, height: 740 } : { width: 936, height: 980 };
 }
 
-export function AdStage({ scene, layout, bounds, overlay, frozen = false }: AdStageProps) {
+export function AdStage({ scene, layout, bounds, overlay, frozen = false, zoom }: AdStageProps) {
   const frame = useCurrentFrame();
   const box = useBox();
   const ext = gridOverhang(layout);
@@ -42,7 +44,15 @@ export function AdStage({ scene, layout, bounds, overlay, frozen = false }: AdSt
   const s = Math.min(box.width / bw, box.height / bh);
   return (
     <div style={{ width: bw * s, height: bh * s, position: 'relative', overflow: 'hidden', margin: '0 auto', border: frozen ? '3px dashed var(--ink-2)' : '2px solid var(--rule)', borderRadius: 8, background: 'var(--bg)' }}>
-      <div style={{ position: 'absolute', left: -(bounds.minX + ext) * s, top: -bounds.minY * s, width: (scene.width + ext) * s }}>
+      <div
+        style={{
+          position: 'absolute',
+          left: -(bounds.minX + ext) * s,
+          top: -bounds.minY * s,
+          width: (scene.width + ext) * s,
+          ...(zoom ? { transform: `scale(${zoom.k})`, transformOrigin: `${(zoom.cx + ext) * s}px ${zoom.cy * s}px` } : {}),
+        }}
+      >
         <MotionModeProvider reduced>
           <HoverProvider>
             <div key={frame}>
