@@ -10,6 +10,5 @@ test-results/
 playwright-report/
 .env
 .env.*
-marketing/ad/out/
-# Music is licensed for use, not for redistribution in a public repo.
-marketing/ad/public/*.mp3
+# Marketing material (the ad, its music and renders) stays local, off GitHub.
+marketing/

@@ -25,10 +25,12 @@ export interface StageProps {
   extendLeft?: number;
   /** CSS max-height; a taller scene then scales down, anchored top left. */
   maxHeight?: string | undefined;
+  /** Draw the graph-paper grid behind the stage (the app always does). */
+  grid?: boolean;
   children: ReactNode;
 }
 
-export function Stage({ scene, label, minWidth = 0, maxScale = 1.25, interactive = false, extendLeft = 0, maxHeight, children }: StageProps) {
+export function Stage({ scene, label, minWidth = 0, maxScale = 1.25, interactive = false, extendLeft = 0, maxHeight, grid = true, children }: StageProps) {
   const scope = useId();
   const PATTERN = useMemo(() => scopedPatterns(scope), [scope]);
   return (
@@ -57,7 +59,7 @@ export function Stage({ scene, label, minWidth = 0, maxScale = 1.25, interactive
           <circle cx="3" cy="3" r="1.1" fill="var(--ink-2)" />
         </pattern>
       </defs>
-      <rect x={-extendLeft} width={scene.width + extendLeft} height={scene.height} fill={`url(#${PATTERN.grid})`} />
+      {grid && <rect x={-extendLeft} width={scene.width + extendLeft} height={scene.height} fill={`url(#${PATTERN.grid})`} />}
       <PatternContext.Provider value={PATTERN}>{children}</PatternContext.Provider>
     </svg>
   );
