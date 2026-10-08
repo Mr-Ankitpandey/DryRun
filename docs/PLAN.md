@@ -358,3 +358,51 @@ the final review, README and release.
   pass: LCP < 2.5 s and CLS < 0.1 on /, /t/binary-search, /t/dijkstra (Fast 4G, CPU ×4);
   p95 frame time 16.7 ms on quick sort, merge sort, Dijkstra, knapsack, DFS, LCS at
   390 px under CPU ×6.
+- 2026-10-06 — Round 4, heap. Schema: `{ t: 'array.tree', arr }` declares that an
+  array is also drawn as its implicit binary tree (state.implicitTree); the scene
+  mirrors each element as a tree node keyed `h:<element>` with `ref` to it, placed at
+  its current slot, so one swap moves one element in both views. Chosen over a meta
+  flag because layout and scene read only the run, so every surface (trace, landing
+  stills, review) gets the view with no call-site changes. Tree edges are keyed by
+  the child slot (slot geometry never moves). Picks stay on array cells. Region kind
+  `ordered` ("in order") added for build-heap's finished suffix ('sorted' would be
+  false there). `meta.fieldLabels` lets a module rename an Edit-input field (heap's
+  x is "Value to insert"). Heap: binary MIN-heap, Sedgewick sink (smaller child,
+  left on ties; equal never swaps); insert/extract require a valid heap (validator
+  names the first violation); x always in the URL so switching to insert in the
+  sheet keeps the field. Cap 60 (exact worst 48). Test-only native runner shared by
+  the round-4 modules: src/algorithms/_code/native.ts (writes under .scratch/r4/).
+- 2026-10-06 — Round 4, topological sort. Schema: `graph` takes `directed: true`
+  (GraphState.directed), arc ids `ids.arc(a, b)` = `a:a>b` (ids.edge unchanged);
+  undirected graphs are byte-for-byte as before (no new keys, no bends). Layout:
+  longest-path columns for DAGs; arcs that would cross a node curve (quadratic,
+  smallest clearing bend, node circles first, then labels/box, then running along
+  another arc), with up to five extra rows of height when needed — chosen after
+  measuring 15 % of random DAGs with an arc through a node at the first attempt,
+  0 of 2,500 now. Arrowheads are filled paths in the stroke token (no SVG marker:
+  markers would stretch on the scaled lines the BST edges use; arcs never move, so
+  they draw as static paths in `render/Arc.tsx`). Kahn's queue is plain FIFO
+  (sources ascending, out-arcs ascending): what students write, and "smallest id
+  first" only decides ties of arrival. Output list = a push-only `queue` panel
+  named `order`. Input arcs are written `a>b` (clearer than `a-b` for a direction;
+  the URL escapes `>`). Steps = 3 + n + 2·arcs, cap 60 (worst 45).
+- 2026-10-06 — Round 4, union-find. Schema: `{ t: 'forest' }` turns an empty tree
+  into a forest (several roots, n-ary children by parent pointer, side null; cycles and
+  sides throw); `label` also labels tree nodes (`TreeNode.text`). BST behaviour is
+  unchanged (the flag is absent there; layoutTree steps aside only for forests).
+  Layout: one column per node, spans never overlap, positions per state from parent
+  pointers (relinked subtrees and the trees beside them slide; nothing jumps). Rank is
+  a label ABOVE each root (below, the edges to its children would cross it); compare
+  brackets start above labels. Find's walk is one step so the root ask makes the
+  learner follow the whole path; link and rank update are one step so the rank bounds
+  the height in every state (two steps broke the invariant between lines 12 and 13).
+  Ties: smaller id on top (stated). C++ calls union `unite` (keyword). Cap 90
+  (longest found 59).
+- 2026-10-08 — Round 4 accepted: binary min-heap (insert / extract-min / build-heap)
+  with the heap-array ↔ implicit-tree linked view (`array.tree`, mirror ids `h:<el>`),
+  topological sort (Kahn; directed arcs via `graph.directed` and `ids.arc`), and
+  union-find (union by rank + path compression; multi-root `forest` event). 13
+  algorithms registered; all four code languages executed for each. Lead fixes during
+  review: `array.flat` view so union-find's parent[] is not drawn as value-height bars;
+  opaque base under tinted tree/graph nodes so edges no longer show through. Checks:
+  710 unit tests, 162 desktop + 41 phone e2e (single worker).

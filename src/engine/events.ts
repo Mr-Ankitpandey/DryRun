@@ -28,7 +28,9 @@ export type MarkKind =
   | 'done'
   | 'stale';
 
-export type RegionKind = 'sorted' | 'eliminated' | 'less' | 'greaterEq' | 'unscanned' | 'window';
+/** 'ordered': slots where the structure's order already holds (bottom-up
+ *  build-heap: every slot after k heads a valid heap). */
+export type RegionKind = 'sorted' | 'eliminated' | 'less' | 'greaterEq' | 'unscanned' | 'window' | 'ordered';
 export type EdgeMark = 'relaxed' | 'tree' | 'rejected';
 export type PanelKind = 'stack' | 'queue' | 'pq' | 'callstack' | 'vars';
 export type CompareResult = '<' | '=' | '>';
@@ -52,6 +54,12 @@ export type VizEvent =
   | { t: 'skip'; ref: Ref; reason: string }
   // ---- arrays
   | { t: 'array'; name: ArrayName; size: number }
+  /** Also draw array `arr` as the implicit binary tree of its slots (slot i's
+   *  children are 2i + 1 and 2i + 2). Declares a view only; no data changes. */
+  | { t: 'array.tree'; arr: ArrayName }
+  /** Draw array `arr` as equal-height cells: its values are labels (ids,
+   *  pointers), not magnitudes. Declares a view only; no data changes. */
+  | { t: 'array.flat'; arr: ArrayName }
   | { t: 'move'; id: Id; to: Slot }
   | { t: 'swap'; a: Slot; b: Slot }
   | { t: 'set'; slot: Slot; value: number }
@@ -71,9 +79,15 @@ export type VizEvent =
   | { t: 'node.relink'; id: Id; parent: Id | null; side: 'L' | 'R' | null }
   | { t: 'node.remove'; id: Id }
   | { t: 'node.set'; id: Id; key: number }
+  /** Switches an empty tree to a forest: any number of parentless nodes, and
+   *  `node.add` / `node.relink` with side null attach under a parent with any
+   *  number of children (read from parent pointers, not left/right). */
+  | { t: 'forest' }
   // ---- graphs (topology fixed at load; only marks and labels change)
-  | { t: 'graph'; nodes: { id: Id; label: string }[]; edges: { id: Id; a: Id; b: Id; w?: number }[] }
+  /** `directed: true` makes every edge an arc a → b (ids from `ids.arc`). */
+  | { t: 'graph'; nodes: { id: Id; label: string }[]; edges: { id: Id; a: Id; b: Id; w?: number }[]; directed?: true }
   | { t: 'edge.mark'; id: Id; as: EdgeMark | null }
+  /** Text under a graph node, or under a tree node (forest ranks). */
   | { t: 'label'; id: Id; text: string | null }
   // ---- DP grid
   | { t: 'grid'; rows: number; cols: number; rowLabels: string[]; colLabels: string[] }

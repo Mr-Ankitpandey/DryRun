@@ -34,7 +34,7 @@ test.beforeEach(({ browserName }, info) => {
   test.skip(info.project.name !== 'desktop' || browserName !== 'chromium', 'sizes are set explicitly');
 });
 
-const ALGORITHMS = ['binary-search', 'quick-sort', 'dijkstra', 'bst', 'insertion-sort', 'merge-sort', 'bfs', 'knapsack', 'dfs', 'lcs'];
+const ALGORITHMS = ['binary-search', 'quick-sort', 'dijkstra', 'bst', 'insertion-sort', 'merge-sort', 'bfs', 'knapsack', 'dfs', 'lcs', 'heap', 'topo-sort', 'union-find'];
 
 interface View {
   width: 390 | 1280;

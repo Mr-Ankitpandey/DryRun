@@ -13,7 +13,14 @@ import { plainBuild } from '@/algorithms/bst/input';
 import type { PlainNode } from '@/algorithms/bst/input';
 import type { DijkstraInput } from '@/algorithms/dijkstra/generator';
 import { hasStalePop } from '@/algorithms/dijkstra/input';
+import type { HeapInput } from '@/algorithms/heap';
+import { runOp as heapRun } from '@/algorithms/heap/model';
 import type { KnapsackInput } from '@/algorithms/knapsack/generator';
+import type { TopoInput } from '@/algorithms/topo-sort';
+import type { UfInput } from '@/algorithms/union-find';
+import { hasRankTie } from '@/algorithms/union-find/input';
+import { runOps as ufRun } from '@/algorithms/union-find/model';
+import { hasMultiParent, maxQueue as topoMaxQueue } from '@/algorithms/topo-sort/input';
 import { hasTie } from '@/algorithms/knapsack/input';
 import type { Step } from '@/engine/events';
 import { createRng } from '@/lib/rng';
@@ -72,6 +79,14 @@ const CASE_CHECKS: Record<string, (input: unknown, steps: readonly Step[]) => bo
   'dfs:forest': (i) => treeCount(i as DfsInput) >= 2,
   'lcs:tie': (i) => walkHasTie(i as LcsInput),
   'lcs:long': (i) => lcsReference(i as LcsInput).length >= 3,
+  'heap:ties': (i) => heapRun(i as HeapInput).stats.tie,
+  'heap:deep': (i) => heapRun(i as HeapInput).stats.end && heapRun(i as HeapInput).stats.longest >= 2,
+  'heap:insert': (i) => (i as HeapInput).op === 'insert' && (i as HeapInput).a.length >= 1,
+  'heap:extract': (i) => (i as HeapInput).op === 'extract' && (i as HeapInput).a.length >= 2,
+  'union-find:compress': (i) => ufRun(i as UfInput).stats.compressions > 0,
+  'union-find:tie': (i) => hasRankTie(i as UfInput),
+  'topo-sort:wide': (i) => topoMaxQueue(i as TopoInput) >= 3,
+  'topo-sort:multi-parent': (i) => hasMultiParent(i as TopoInput),
   'knapsack:partial': (i) => {
     const k = i as KnapsackInput;
     return k.w.reduce((s, x) => s + x, 0) > k.W;
@@ -98,7 +113,7 @@ describe('targets table', () => {
     const ids = registry.map((e) => e.id);
     for (const id of Object.keys(MISTAKE_TARGETS)) expect(ids).toContain(id);
     expect(Object.keys(MISTAKE_TARGETS).sort()).toEqual(
-      ['bfs', 'binary-search', 'bst', 'dfs', 'dijkstra', 'insertion-sort', 'knapsack', 'lcs', 'merge-sort', 'quick-sort'].sort(),
+      ['bfs', 'binary-search', 'bst', 'dfs', 'dijkstra', 'heap', 'insertion-sort', 'knapsack', 'lcs', 'merge-sort', 'quick-sort', 'topo-sort', 'union-find'].sort(),
     );
   });
 

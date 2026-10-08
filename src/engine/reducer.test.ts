@@ -201,3 +201,13 @@ describe('reducer: graph, grid, frames', () => {
     expect(s.frames['f:2']).toMatchObject({ returned: true, value: 1 });
   });
 });
+
+describe('reducer: array.flat', () => {
+  it('declares an array flat once and rejects unknown arrays', () => {
+    let s = ev(base(), { t: 'array.flat', arr: 'a' });
+    expect(s.flatArrays).toEqual(['a']);
+    s = ev(s, { t: 'array.flat', arr: 'a' });
+    expect(s.flatArrays).toEqual(['a']);
+    expect(() => ev(s, { t: 'array.flat', arr: 'zz' })).toThrow(/no array/);
+  });
+});

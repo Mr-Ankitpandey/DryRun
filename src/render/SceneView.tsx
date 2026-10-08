@@ -2,8 +2,8 @@
  *  optional overlay drawn on top in the same coordinates (the trace layer's
  *  pick targets, ghost and correct ring).
  *
- *  Arrays and connectors are always here. The recursion tree, BST, graph and
- *  DP grid views are one lazily loaded chunk (./structure-views), fetched only
+ *  Arrays and connectors are always here. The recursion tree, tree (a BST,
+ *  or an array's implicit tree), graph and DP grid views are one lazily loaded chunk (./structure-views), fetched only
  *  when the layout has one of them, so the landing's array-only hero stays
  *  small. They mount settled (no fade-in for what is on screen when they
  *  arrive), like everything present at a stage's first render. */
@@ -47,11 +47,11 @@ export function SceneView({ scene, layout, label, overlay, interactive = false, 
   return (
     <Stage scene={scene} label={label} interactive={interactive} extendLeft={gridOverhang(layout)} maxHeight={maxHeight} {...(minWidth !== undefined ? { minWidth } : {})} {...(maxScale !== undefined ? { maxScale } : {})}>
       <ArrayView scene={scene} layout={layout} />
-      {(layout.recursion || layout.tree || layout.graph || layout.grid) && (
+      {(layout.recursion || layout.tree || layout.implicitTree || layout.forest || layout.graph || layout.grid) && (
         <Suspense fallback={null}>
           <Settled>
             {layout.recursion && <RecursionTree scene={scene} />}
-            {layout.tree && <TreeView scene={scene} />}
+            {(layout.tree || layout.implicitTree || layout.forest) && <TreeView scene={scene} />}
             {layout.graph && <GraphView scene={scene} />}
             {layout.grid && <GridView scene={scene} layout={layout} />}
           </Settled>

@@ -6,7 +6,7 @@
 import type { Layout } from '@/engine/layout';
 import { slotCenter } from '@/engine/layout';
 import type { Scene } from '@/engine/scene';
-import { primsOf } from '@/engine/scene';
+import { FLAT_CELL_H, primsOf } from '@/engine/scene';
 import { Bar } from './Bar';
 import { Caret } from './Caret';
 import { useMoveHints } from './MotionMode';
@@ -28,6 +28,12 @@ export function ArrayView({ scene, layout }: { scene: Scene; layout: Layout }) {
     if (c.visible) stackAt.set(key, k + 1);
     return k;
   });
+  // A flat array (scene: every cell FLAT_CELL_H tall) gets outlines of the
+  // same height, so no empty "tall slot" suggests a size.
+  const outlineH = (arr: string, full: number) => {
+    const row = bars.filter((b) => b.arr === arr);
+    return row.length > 0 && row.every((b) => b.h === FLAT_CELL_H) ? FLAT_CELL_H : full;
+  };
   return (
     <g data-view="array">
       {al.order.map((name) => {
@@ -42,7 +48,7 @@ export function ArrayView({ scene, layout }: { scene: Scene; layout: Layout }) {
             )}
             {Array.from({ length: row.n }, (_, i) => (
               <g key={i}>
-                <rect x={row.x0 + i * row.cellW + 2} y={row.y} width={row.cellW - 4} height={row.barH} fill="none" stroke="var(--grid)" strokeWidth={1} />
+                <rect x={row.x0 + i * row.cellW + 2} y={row.y + row.barH - outlineH(name, row.barH)} width={row.cellW - 4} height={outlineH(name, row.barH)} fill="none" stroke="var(--grid)" strokeWidth={1} />
                 <text x={slotCenter(row, i)} y={row.y + row.barH + 11} textAnchor="middle" fontSize={9} fill="var(--ink-2)">
                   {i}
                 </text>

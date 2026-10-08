@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import type { AlgorithmModule } from '@/algorithms/types';
 import { findEntry } from '@/algorithms/registry';
 import type { Level, MistakeRecord, ReviewItem } from '@/lib/storage';
@@ -7,7 +7,9 @@ import { targetSentence } from '@/learn/targets';
 import type { MistakeKind } from '@/trace/asks';
 import type { Session } from '@/trace/session';
 import { Button } from '@/ui/Button';
-import { TracePlayer } from '../trace/TracePlayer';
+// The player (and the engine under it) loads only when a re-trace starts, so
+// the review screen's first paint stays inside the route budget.
+const TracePlayer = lazy(() => import('../trace/TracePlayer').then((m) => ({ default: m.TracePlayer })));
 
 export interface ReviewItemRunnerProps {
   item: ReviewItem;
@@ -83,20 +85,28 @@ export function ReviewItemRunner({ item, level, mistakes, now, onFinish }: Revie
           {why}
         </p>
       ) : null}
-      <TracePlayer
-        module={state.module}
-        input={state.input}
-        seed={state.seed}
-        mode="trace"
-        level={level}
-        variant="full"
-        persist
-        onFinish={(session) => {
-          if (finished.current) return;
-          finished.current = true;
-          onFinish(session);
-        }}
-      />
+      <Suspense
+        fallback={
+          <p className="py-4 text-base text-ink-2" aria-busy="true">
+            Preparing a fresh input for {title}…
+          </p>
+        }
+      >
+        <TracePlayer
+          module={state.module}
+          input={state.input}
+          seed={state.seed}
+          mode="trace"
+          level={level}
+          variant="full"
+          persist
+          onFinish={(session) => {
+            if (finished.current) return;
+            finished.current = true;
+            onFinish(session);
+          }}
+        />
+      </Suspense>
     </>
   );
 }

@@ -11,6 +11,7 @@ import { positionOf } from '@/engine/scene';
 import { GRAPH_NODE_R } from '@/engine/layout/graph';
 import { TREE_NODE_R } from '@/engine/layout/tree';
 import { useInstant, useTransition } from './MotionMode';
+import { TNODE_TEXT_H } from './labels';
 
 export function Link({ p, scene }: { p: LinkPrim; scene: Scene }) {
   const fade = useTransition('fade');
@@ -18,8 +19,11 @@ export function Link({ p, scene }: { p: LinkPrim; scene: Scene }) {
   const a = positionOf(scene, p.from);
   const b = positionOf(scene, p.to);
   const rimOf = (id: string) => {
-    const k = scene.prims.get(id)?.kind;
-    return k === 'gnode' ? GRAPH_NODE_R : k === 'tnode' ? TREE_NODE_R : 0;
+    const prim = scene.prims.get(id);
+    if (prim?.kind === 'gnode') return GRAPH_NODE_R;
+    // A labelled tree node carries its text above the circle: start above it.
+    if (prim?.kind === 'tnode') return TREE_NODE_R + (prim.text !== undefined ? TNODE_TEXT_H : 0);
+    return 0;
   };
   if (!a && !b) return null;
   const common = { 'data-id': p.id, 'data-style': p.style, initial: inst ? false : { opacity: 0 }, animate: { opacity: 1 }, transition: fade } as const;

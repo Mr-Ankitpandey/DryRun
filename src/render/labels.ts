@@ -41,3 +41,9 @@ export function gridLabelLines(label: string): string[] {
 export function gridLabelWidth(label: string, fontSize: number): number {
   return Math.max(0, ...gridLabelLines(label).map((l) => monoWidth(l, fontSize)));
 }
+
+/** A tree node's text (a forest root's rank) sits above it: edges to its
+ *  children fan out below, so the label never collides with them. */
+export const TNODE_TEXT_GAP = 9;
+/** Height the label adds above the circle (compare brackets start above it). */
+export const TNODE_TEXT_H = 20;

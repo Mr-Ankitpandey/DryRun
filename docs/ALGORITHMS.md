@@ -360,6 +360,160 @@ A–Z, 0–7 letters. Steps ≤ 90 (worst case 78).
 Pitfalls: comparing a[i] with b[j]; +1 on a mismatch; min instead of max; taking
 left on a tie during the walk.
 
+## 11. Binary heap (min): insert, extract-min, build-heap
+
+Renderer: array `a` (the heap) and, under it, the same array drawn as its implicit
+binary tree (`array.tree`, ARCHITECTURE §1): slot i's node sits at depth
+⌊log₂(i + 1)⌋ and is keyed by the element, so a swap moves the same element in both
+views; hovering a cell or a node links the two. Extract adds a 1-slot array `min`.
+Invariant: "Every parent is ≤ its children, except where the moving value at `i` is
+still out of place." (build: "Every slot after `k` heads a heap; the value at `i` is
+still sifting down.", with an `ordered` region over the slots after `k`).
+Tie-break: sift-down compares with the smaller child, the left one when the two are
+equal (`a[r] < a[l]` is strict); a value equal to its parent or child never swaps.
+insert and extract start from a valid min-heap (the validator names the first
+child smaller than its parent and points to build); build takes any array.
+
+```
+insert(x):                                 extractMin():
+    a[n] = x; i = n; n = n + 1                 if n == 0: return none
+    while i > 0:                               min = a[0]; n = n - 1
+        p = (i - 1) / 2  // rounded down       a[0] = a[n]   // the last element fills the root
+        if a[p] <= a[i]: break                 i = 0
+        swap a[i], a[p]                        while true:
+        i = p                                      l = 2i + 1; r = 2i + 2
+                                                   if l >= n: break            // a leaf
+buildHeap(a):                                      c = l
+    for k = n/2 - 1 down to 0:                     if r < n and a[r] < a[l]: c = r
+        siftDown(k)                                if a[i] <= a[c]: break
+siftDown(i): the same loop as extractMin's,        swap a[i], a[c]
+    `return` for `break`                           i = c
+                                               return min
+```
+Events: insert: `array` (grow) + `set` a[n] (mints the element) + `mark active`;
+per level `pointer p`, `compare` parent/value, `swap` + `pointer i`. Extract: `move`
+the root into `min` (`mark done`), `move` the last element into slot 0 + `array`
+(shrink); per level `compare` r with l + `pointer c` (two children only), `compare`
+value/child, `swap`. Build: per k `pointer k`/`i`, the sift, then `region ordered
+[k, n−1]`. An empty extract is one step with a note.
+
+Asks:
+| kind | lvl | prompt | answer | distractors |
+|---|---|---|---|---|
+| pick | G | Sifting v down from a[i]: which child does it compare with? | smaller child (left on ties) | the other child → `comparison` (tie: "the left one is kept") |
+| choice | G | Does v keep sifting up / down? | yes / no | at the root or a leaf → `base-case`; otherwise → `comparison` (equal values stop) |
+| pick | G | Which element does extractMin take? | the root | the last element → `order` |
+| value | F | The value is at i. What is the index of its parent? | ⌊(i − 1) / 2⌋ | i / 2, i − 1, 2i + 1 → `boundary` |
+| choice | F | The root is empty. Which element moves into it? | a[n − 1] | a[1], a[2] → `order` |
+| pick | F | Bottom-up build on n: which element is sifted first? | a[n/2 − 1] | a[n/2], a[n − 1] → `boundary`; a[0] → `order` |
+
+Presets: insert-bubbles-to-root, insert-stays, insert-equal-parent, extract-sinks-left,
+extract-sinks-right, duplicates (equal children), build-reverse, build-sorted, single,
+empty-extract. Targets: insert, extract, build (the operation), ties (a sift meets an
+equal value), deep (a value travels ≥ 2 levels and reaches the root or a leaf).
+Up to 15 values 0–99 (an insert needs room for one more). URL:
+`i=2,5,3&op=insert&x=1` (x is always carried; only insert uses it). Steps ≤ 60
+(exact worst case 48: build on 15 descending values).
+Pitfalls: sifting towards the larger child; 1-based parent formula (i / 2);
+forgetting that the last element, not a child, refills the root; starting build at
+n/2 or at the leaves; swapping equal values.
+
+## 12. Topological sort (Kahn's algorithm)
+
+Renderer: directed graph (`graph` with `directed: true`; arcs drawn with arrowheads,
+columns by the longest path from a source so every arc points right, an arc that
+would cross another node curves around it) + queue panel + an `order` panel (the
+output, first to last) + an in-degree table. Node labels are the current in-degree.
+Invariant: "A node is output only when every arc into it is gone: all its
+predecessors are already in the order." Tie-break: the queue is first in, first out;
+the sources start in it in ascending id and the arcs out of a node are removed in
+ascending target id. DAGs only: the validator names a cycle ("These arcs form a cycle,
+0 → 1 → 2 → 0, so no order exists: remove one of them.").
+
+```
+1  for each node v: indeg[v] = number of arcs into v
+2  queue = nodes with indeg 0, in ascending id
+3  while queue not empty:
+4      u = dequeue(); append u to order
+5      for each arc u → v, in ascending v:
+6          indeg[v] = indeg[v] - 1
+7          if indeg[v] == 0: enqueue(v)
+8  return order          // all n nodes: the graph has no cycle
+```
+Events: line 1 labels every node; line 2 `push`es the sources (`frontier`); a
+dequeue is `pop` + `mark settled` + `push` to `order`; each arc removal is
+`edge.mark rejected` (dashed) + `label`; each check is a `push` (`frontier`) or a
+`read` beat ("it waits"). The loop test (line 3) is folded into the dequeue step.
+
+Asks:
+| kind | lvl | prompt | answer | distractors |
+|---|---|---|---|---|
+| pick | G | (Queue, front first: …) Which node is output next? | the front | the back → `order` (stack); smallest queued id → `order`; smallest node with in-degree > 0 → `comparison` |
+| value | G | In-degree of v after removing the arc u → v? | d − 1 | d, d − 2 → `boundary` |
+| choice | F | Can v enter the queue now? | yes / no | the other → `comparison` |
+| order | F | Queue contents after this step, front first? (also the start) | the queue | reversed, new nodes at the front → `order` |
+
+Presets: diamond, chain, two-sources, wide, ids-in-order (every arc goes from a
+smaller to a larger id, yet the output is 0, 1, 3, 2, 4), reverse-ids, single.
+Targets: wide (3+ nodes queued at once), multi-parent (a node with in-degree ≥ 2).
+Nodes ≤ 10, arcs ≤ 16, URL `n=4&g=0>1,0>2,1>3,2>3`. Steps = 3 + n + 2 · arcs
+(≤ 45; cap 60).
+Pitfalls: outputting a node before all its predecessors; treating the queue as a
+stack; decrementing the wrong node; forgetting that a node joins exactly when its
+in-degree hits 0.
+
+## 13. Union-find (union by rank, path compression)
+
+Renderer: the array `parent` (parent[i], a root points to itself) above a forest
+(`forest` event: every element starts as its own root; roots side by side in id
+order, each tree tidy, one column per element). Every root carries its rank as a
+label above it ("rank 1"); a node that stops being a root loses the label (its rank
+no longer matters). Invariant: "Every element points towards its root, and a root's
+rank is at least its tree's height." Tie-break: union by rank puts the larger rank on
+top; on equal ranks the smaller id becomes the parent.
+
+```
+1  find(x):
+2      r = x
+3      while parent[r] != r: r = parent[r]
+4      while parent[x] != r:                 // path compression
+5          next = parent[x]; parent[x] = r; x = next
+6      return r
+7  union(a, b):
+8      ra = find(a); rb = find(b)
+9      if ra == rb: return                   // already in the same set
+10     if rank[ra] < rank[rb]: swap ra, rb   // the larger rank goes on top
+11     else if rank[ra] == rank[rb] and rb < ra: swap ra, rb   // tie: smaller id
+12     parent[rb] = ra
+13     if rank[ra] == rank[rb]: rank[ra] = rank[ra] + 1
+```
+Events: a find's walk is one step (line 3: the path `visited`, the root `active`,
+the parent[] cells `read`); each compressed pointer is one step (line 5: `set`
+parent[x] + `node.relink` x under the root, so the node visibly climbs); a
+standalone find ends with "returns r" (line 6). A union runs both finds (the first
+root stays marked `key`), then "same set?" (line 9: an equal-roots `compare` when
+it is), "which root on top" (line 10, or 11 on a tie: a `compare` of the ranks),
+and link + rank in ONE step (line 12, or 13 when the rank grows: `set`,
+`node.relink`, labels), so the rank bounds the height in every state.
+
+Asks:
+| kind | lvl | prompt | answer | distractors |
+|---|---|---|---|---|
+| pick | G | Which root does find(x) reach? (x not a root) | the root | parent of x, x → `base-case` |
+| pick | F | Path compression: where does v point now? | the root | old parent, grandparent → `dependency` |
+| choice | G | Are a and b already in the same set? | yes / no | the other → `comparison` |
+| choice | G | Roots p (rank i) and q (rank j): which becomes the parent? | larger rank, else smaller id | the other → `comparison` |
+| value | F | What is rank[r] after this union? | new rank | +1 when ranks differed / unchanged when equal → `comparison` |
+
+Presets: chain-then-find (three equal-rank unions build a rank-3 tree; find(7)
+compresses two pointers), union-by-rank-tie, already-same-set, star, separate.
+Targets: compress (a find moves a pointer), same-set, tie (two roots of equal rank
+≥ 1 meet). n ≤ 10, ≤ 12 operations, URL `n=8&ops=u0-1,u2-3,f3`. Steps ≤ 90 (longest
+of 60,000 random 12-operation runs: 59).
+Pitfalls: stopping find one node early; thinking compression points a node at its
+grandparent (that is path halving); attaching the larger tree under the smaller;
+growing the rank on every union.
+
 ## Cross-cutting rules
 
 - Every module ships `reference()` (plain implementation) and `invariantCheck()`;

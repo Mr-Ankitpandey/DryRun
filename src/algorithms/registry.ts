@@ -98,6 +98,30 @@ export const registry: RegistryEntry[] = [
     minutes: 7,
     load: () => import('./lcs').then((m) => erase(m.lcs)),
   },
+  {
+    id: 'heap',
+    title: 'Binary heap (min)',
+    family: 'tree',
+    practice: 'Which child a value sifts towards, whether it keeps sifting, and where a parent sits.',
+    minutes: 4,
+    load: () => import('./heap').then((m) => erase(m.heap)),
+  },
+  {
+    id: 'topo-sort',
+    title: 'Topological sort (Kahn)',
+    family: 'graph',
+    practice: 'Which node is output next, what each in-degree drops to, and when a node may join the queue.',
+    minutes: 5,
+    load: () => import('./topo-sort').then((m) => erase(m.topoSort)),
+  },
+  {
+    id: 'union-find',
+    title: 'Union-find (rank + path compression)',
+    family: 'tree',
+    practice: 'Which root a find reaches, where a compressed node points, and which root goes on top.',
+    minutes: 5,
+    load: () => import('./union-find').then((m) => erase(m.unionFind)),
+  },
 ];
 
 export function findEntry(id: string): RegistryEntry | undefined {

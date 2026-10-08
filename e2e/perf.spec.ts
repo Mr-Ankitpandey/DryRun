@@ -39,7 +39,7 @@ const quantile = (sorted: number[], p: number) => sorted[Math.min(sorted.length 
 
 // ---------------------------------------------------------------- 1. frames
 
-for (const id of ['quick-sort', 'merge-sort', 'dijkstra', 'knapsack', 'dfs', 'lcs']) {
+for (const id of ['quick-sort', 'merge-sort', 'dijkstra', 'knapsack', 'dfs', 'lcs', 'heap', 'union-find']) {
   test(`frames: ${id} at 390 px, CPU ×6, 10 played steps, p95 ≤ 20 ms`, async ({ browser, baseURL }) => {
     const ctx = await browser.newContext({ ...(baseURL ? { baseURL } : {}), viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
     const page = await ctx.newPage();
@@ -125,6 +125,9 @@ const ROUTES: { path: string; budget: number; interact: boolean }[] = [
   { path: '/t/knapsack', budget: 170, interact: true },
   { path: '/t/dfs', budget: 170, interact: true },
   { path: '/t/lcs', budget: 170, interact: true },
+  { path: '/t/heap', budget: 170, interact: true },
+  { path: '/t/topo-sort', budget: 170, interact: true },
+  { path: '/t/union-find', budget: 170, interact: true },
   { path: '/review', budget: 130, interact: false },
   { path: '/mistakes', budget: 130, interact: false },
   { path: '/progress', budget: 130, interact: false },

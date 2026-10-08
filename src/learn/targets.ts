@@ -73,6 +73,22 @@ export const MISTAKE_TARGETS: Table = {
     dependency: { target: 'long', has: 'These strings share a subsequence of at least three letters' },
     boundary: { target: 'long', has: 'These strings share a subsequence of at least three letters' },
   },
+  heap: {
+    comparison: { target: 'ties', has: 'In this heap a sifting value meets an equal value, and equal values never swap' },
+    'base-case': { target: 'deep', has: 'Here a value travels at least two levels and runs out of room at the root or a leaf' },
+    boundary: { target: 'insert', has: 'This input inserts a value, so you work out parent indices on its way up' },
+    order: { target: 'extract', has: 'This input extracts the minimum, so the last element refills the root' },
+  },
+  'topo-sort': {
+    order: { target: 'wide', has: 'In this graph three or more nodes wait in the queue at once' },
+    comparison: { target: 'multi-parent', has: 'In this graph a node has two or more arcs in, so it waits after the first one goes' },
+    boundary: { target: 'multi-parent', has: 'In this graph a node has two or more arcs in, so its in-degree drops more than once' },
+  },
+  'union-find': {
+    'base-case': { target: 'compress', has: 'Here a find walks up at least two levels before it reaches the root' },
+    dependency: { target: 'compress', has: 'Here a find compresses its path, so nodes jump straight to the root' },
+    comparison: { target: 'tie', has: 'Here two roots of equal rank meet, so the tie rule picks the parent' },
+  },
 };
 
 /** How a kind reads after "recently you stumbled most on …". */

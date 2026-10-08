@@ -78,4 +78,5 @@ export const REGION_LABEL: Record<RegionPrim['kind2'], string> = {
   greaterEq: '≥ pivot',
   unscanned: 'unscanned',
   window: 'window',
+  ordered: 'in order',
 };

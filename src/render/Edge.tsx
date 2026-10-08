@@ -65,7 +65,7 @@ export const Edge = memo(function Edge({ p, badge }: { p: EdgePrim; badge?: { x:
   );
 }, sameProps);
 
-function strokeFor(p: EdgePrim): { stroke: string; width: number; dash: string | undefined } {
+export function strokeFor(p: EdgePrim): { stroke: string; width: number; dash: string | undefined } {
   if (p.kind !== 'gedge') return { stroke: p.kind === 'fedge' ? 'var(--rule)' : 'var(--ink-2)', width: 1.25, dash: undefined };
   switch (p.mark) {
     case 'relaxed':

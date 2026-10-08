@@ -319,3 +319,18 @@ describe('recursion tree and call stack', () => {
     expect(vars.map((v) => v.label)).toContain('pivot');
   });
 });
+
+describe('scene: flat arrays', () => {
+  it('draws every cell of an array declared flat at the same height', async () => {
+    const { unionFind } = await import('@/algorithms/union-find');
+    const p = unionFind.presets[0];
+    if (!p) throw new Error('no preset');
+    const r = run(unionFind.initialState(p.input), unionFind.generate(p.input), { maxSteps: unionFind.meta.caps.maxSteps });
+    const layout = computeLayout(r, VIEW);
+    for (const st of [r.states[0], r.states[r.states.length - 1]]) {
+      const bars = primsOf(buildScene(st as State, layout, VIEW), 'bar').filter((b) => (b as BarPrim).arr === 'parent') as BarPrim[];
+      expect(bars.length).toBeGreaterThan(0);
+      expect(new Set(bars.map((b) => b.h)).size).toBe(1);
+    }
+  });
+});

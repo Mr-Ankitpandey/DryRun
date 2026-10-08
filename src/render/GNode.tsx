@@ -20,6 +20,8 @@ export const GNode = memo(function GNode({ p }: { p: GNodePrim }) {
     <PrimGroup id={p.id} x={p.x} y={p.y} kind="move">
       {(linked) => (
         <>
+          {/* Opaque base: a tinted (semi-transparent) mark must not let edges show through. */}
+          <circle r={r} fill="var(--surface)" />
           <circle r={r} fill={s.fill} fillOpacity={s.fillOpacity} stroke={linked ? LINKED_STROKE : stroke} strokeWidth={linked ? 2.5 : p.compared ? 2 : s.strokeWidth} strokeDasharray={s.dash} />
           {s.dots && <circle r={r} fill={`url(#${PATTERN.dots})`} />}
           {p.read && <circle r={r + 4} fill="none" stroke="var(--ink-2)" strokeWidth={1} strokeDasharray="1.5 3" />}

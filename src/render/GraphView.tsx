@@ -1,4 +1,5 @@
-/** Graph: fixed topology; edges under nodes. Only marks and labels change.
+/** Graph: fixed topology; edges under nodes (arcs with arrowheads when the
+ *  graph is directed). Only marks and labels change.
  *  Weight badges are placed once per topology so they clear every node and
  *  its labels (./edge-badges). */
 
@@ -6,6 +7,7 @@ import { useMemo } from 'react';
 import type { Scene } from '@/engine/scene';
 import { primsOf } from '@/engine/scene';
 import { GRAPH_NODE_R } from '@/engine/layout/graph';
+import { Arc } from './Arc';
 import { placeWeightBadges } from './edge-badges';
 import { Edge } from './Edge';
 import { GNode } from './GNode';
@@ -22,6 +24,7 @@ export function GraphView({ scene }: { scene: Scene }) {
     <g data-view="graph">
       {edges.map((e) => {
         const b = badges.get(e.id);
+        if (e.directed) return <Arc key={e.id} p={e} {...(b ? { badge: b } : {})} />;
         return <Edge key={e.id} p={e} {...(b ? { badge: b } : {})} />;
       })}
       {nodes.map((n) => (

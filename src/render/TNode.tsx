@@ -1,24 +1,29 @@
-/** A BST node: circle with its key. Floating (detached) nodes get a dashed
+/** A tree node: circle with its key and, above it, its text when it has one
+ *  (a node mirroring an array element links to it on hover through `ref`). Floating (detached) nodes get a dashed
  *  ink-2 ring; marks follow marks.ts; amber stroke while compared, dotted
  *  outline while read. */
 
 import { memo } from 'react';
 import type { TNodePrim } from '@/engine/scene';
+import type { Lift } from './motion-hints';
 import { TREE_NODE_R } from '@/engine/layout/tree';
+import { TNODE_TEXT_GAP } from './labels';
 import { LINKED_STROKE, TICK_PATH, markStyle } from './marks';
 import { sameProps } from './memo';
 import { usePatterns } from './patterns';
 import { PrimGroup } from './PrimGroup';
 
-export const TNode = memo(function TNode({ p }: { p: TNodePrim }) {
+export const TNode = memo(function TNode({ p, lift }: { p: TNodePrim; lift?: Lift | undefined }) {
   const PATTERN = usePatterns();
   const s = markStyle(p.mark);
   const r = TREE_NODE_R;
   const stroke = linkedOr(p, s.stroke);
   return (
-    <PrimGroup id={p.id} x={p.x} y={p.y} kind="move">
+    <PrimGroup id={p.id} linkRef={p.ref ?? null} x={p.x} y={p.y} kind="move" lift={lift}>
       {(linked) => (
         <>
+          {/* Opaque base: a tinted (semi-transparent) mark must not let edges show through. */}
+          <circle r={r} fill="var(--surface)" />
           <circle r={r} fill={s.fill} fillOpacity={s.fillOpacity} stroke={linked ? LINKED_STROKE : stroke} strokeWidth={linked ? 2.5 : p.compared ? 2 : s.strokeWidth} strokeDasharray={p.floating ? '4 3' : s.dash} />
           {s.dots && <circle r={r} fill={`url(#${PATTERN.dots})`} />}
           {p.read && <circle r={r + 4} fill="none" stroke="var(--ink-2)" strokeWidth={1} strokeDasharray="1.5 3" />}
@@ -26,6 +31,11 @@ export const TNode = memo(function TNode({ p }: { p: TNodePrim }) {
           <text y={5} textAnchor="middle" fontSize={14} fill={s.textFill}>
             {p.key}
           </text>
+          {p.text !== undefined && (
+            <text y={-r - TNODE_TEXT_GAP} textAnchor="middle" fontSize={10} fill="var(--ink-2)">
+              {p.text}
+            </text>
+          )}
         </>
       )}
     </PrimGroup>

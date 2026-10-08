@@ -31,6 +31,8 @@ export const TREE_ROW_H = 64;
 export const TREE_NODE_R = 18;
 
 export function layoutTree(run: Run, width: number, top: number): { layout: TreeLayout; height: number } | null {
+  // A forest has its own layout (./forest).
+  if (run.states.some((s) => s.forest)) return null;
   let any = false;
   let depth = 0;
   for (const s of run.states) {

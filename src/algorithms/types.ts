@@ -21,6 +21,9 @@ export interface AlgorithmMeta {
   caps: { maxSteps: number; maxSize: number };
   /** Variants selectable in the UI, e.g. classic / lower-bound. */
   variants: { id: string; title: string }[];
+  /** Labels for this module's input fields in "Edit input", by URL key, when
+   *  the shared wording does not fit (heap: x is the value to insert). */
+  fieldLabels?: Record<string, string>;
 }
 
 export interface Preset<I> {

@@ -33,6 +33,8 @@ export interface TreeNode {
   left: Id | null;
   right: Id | null;
   mark: MarkKind | null;
+  /** Text under the node, set by `label` (absent until labelled). */
+  text?: string | null;
 }
 
 export interface GraphNode {
@@ -53,6 +55,8 @@ export interface GraphEdge {
 export interface GraphState {
   nodes: GraphNode[];
   edges: GraphEdge[];
+  /** Every edge is an arc a → b. Absent for undirected graphs. */
+  directed?: true;
 }
 
 export interface GridCell {
@@ -93,6 +97,12 @@ export interface State {
   panels: Record<string, PanelState>;
   tree: Record<Id, TreeNode>;
   root: Id | null;
+  /** Set by `forest`: several roots, n-ary children by parent pointer; `root` stays null. */
+  forest?: true;
+  /** Set by `array.tree`: this array is also drawn as an implicit binary tree. */
+  implicitTree?: ArrayName;
+  /** Set by `array.flat`: arrays drawn as equal-height cells. */
+  flatArrays?: ArrayName[];
   graph: GraphState | null;
   grid: GridState | null;
   frames: Record<Id, Frame>;

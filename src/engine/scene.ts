@@ -9,7 +9,7 @@
 import type { ArrayName, CompareResult, EdgeMark, Id, MarkKind, PanelKind, Ref, RegionKind, Scalar } from './events';
 import { ids } from './ids';
 import type { Layout } from './layout';
-import { floatOrigin, pathOf, slotCenter, topOf, treePos } from './layout';
+import { floatOrigin, forestPositions, pathOf, slotCenter, topOf, treePos } from './layout';
 import type { State } from './state';
 import { refToId } from './state';
 
@@ -60,6 +60,10 @@ export interface TNodePrim {
   read: boolean;
   compared: boolean;
   floating: boolean;
+  /** The element this node mirrors (implicit tree of an array); hover links both. */
+  ref?: Id;
+  /** Text under the node (set by `label`, e.g. a forest root's rank). */
+  text?: string;
 }
 export interface TEdgePrim {
   kind: 'tedge';
@@ -94,6 +98,10 @@ export interface GEdgePrim {
   y2: number;
   w: number | null;
   mark: EdgeMark | null;
+  /** An arc a → b (directed graphs only). */
+  directed?: true;
+  /** Curve offset from the layout (directed graphs only, when not straight). */
+  bend?: number;
 }
 export interface CellPrim {
   kind: 'cell';
@@ -175,6 +183,8 @@ export const varId = (name: string): Id => `v:${name}`;
 export const callRowId = (frameId: Id): Id => `cs:${frameId}`;
 
 export const BAR_MIN_H = 24;
+/** Cell height for arrays declared with `array.flat`. */
+export const FLAT_CELL_H = 32;
 
 export function buildScene(state: State, layout: Layout, viewport: { width: number }): Scene {
   const prims = new Map<Id, Prim>();
@@ -213,7 +223,8 @@ export function buildScene(state: State, layout: Layout, viewport: { width: numb
         if (id === null) return;
         const el = state.elements[id];
         if (!el) return;
-        const h = BAR_MIN_H + (row.barH - BAR_MIN_H) * (Math.abs(el.value) / al.maxValue);
+        // Flat arrays hold labels (ids, pointers): height must not suggest size.
+        const h = state.flatArrays?.includes(arrName) ? FLAT_CELL_H : BAR_MIN_H + (row.barH - BAR_MIN_H) * (Math.abs(el.value) / al.maxValue);
         put({
           kind: 'bar',
           id,
@@ -243,6 +254,45 @@ export function buildScene(state: State, layout: Layout, viewport: { width: numb
         x: at && row ? slotCenter(row, at.i) : anchor.x0,
         y: anchor.caretY,
         visible: at !== null && row !== undefined,
+      });
+    }
+  }
+
+  // ---- an array drawn as its implicit binary tree: one node per element at
+  // its CURRENT slot's position (keyed by the mirrored element, so a swap moves
+  // the same node in both views) and one edge per occupied parent/child slot
+  // pair (keyed by the child slot: slot geometry never moves).
+  const mirrored = new Set<Id>();
+  if (layout.implicitTree) {
+    const it = layout.implicitTree;
+    const arr = state.arrays[it.arr];
+    if (arr) {
+      arr.slots.forEach((id, i) => {
+        const p = it.pos[i];
+        if (id === null || !p) return;
+        const el = state.elements[id];
+        if (!el) return;
+        mirrored.add(id);
+        put({
+          kind: 'tnode',
+          id: ids.mirror(id),
+          x: p.x,
+          y: p.y,
+          key: el.value,
+          mark: el.mark,
+          read: hot.reads.has(id),
+          compared: hot.compared.has(id),
+          floating: false,
+          ref: id,
+        });
+      });
+      arr.slots.forEach((id, i) => {
+        if (i === 0 || id === null) return;
+        const parent = arr.slots[Math.floor((i - 1) / 2)];
+        const a = it.pos[i];
+        const b = it.pos[Math.floor((i - 1) / 2)];
+        if (parent === null || parent === undefined || !a || !b) return;
+        put({ kind: 'tedge', id: `te:${it.arr}[${i}]`, child: ids.mirror(id), parent: ids.mirror(parent), x1: a.x, y1: a.y, x2: b.x, y2: b.y });
       });
     }
   }
@@ -308,6 +358,23 @@ export function buildScene(state: State, layout: Layout, viewport: { width: numb
     }
   }
 
+  // ---- forest: every root side by side, positions from parent pointers
+  if (layout.forest) {
+    const positions = forestPositions(state, layout.forest);
+    for (const id of Object.keys(state.tree).sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))) {
+      const node = state.tree[id];
+      const p = positions.get(id);
+      if (!node || !p) continue;
+      const prim: TNodePrim = { kind: 'tnode', id, x: p.x, y: p.y, key: node.key, mark: node.mark, read: hot.reads.has(id), compared: hot.compared.has(id), floating: false };
+      if (typeof node.text === 'string') prim.text = node.text;
+      put(prim);
+      if (node.parent !== null) {
+        const pp = positions.get(node.parent);
+        if (pp) put({ kind: 'tedge', id: `te:${id}`, child: id, parent: node.parent, x1: p.x, y1: p.y, x2: pp.x, y2: pp.y });
+      }
+    }
+  }
+
   // ---- graph
   if (layout.graph && state.graph) {
     const gl = layout.graph;
@@ -315,7 +382,13 @@ export function buildScene(state: State, layout: Layout, viewport: { width: numb
       const a = gl.pos[e.a];
       const b = gl.pos[e.b];
       if (!a || !b) continue;
-      put({ kind: 'gedge', id: e.id, a: e.a, b: e.b, x1: a.x, y1: a.y, x2: b.x, y2: b.y, w: e.w ?? null, mark: e.mark });
+      const prim: GEdgePrim = { kind: 'gedge', id: e.id, a: e.a, b: e.b, x1: a.x, y1: a.y, x2: b.x, y2: b.y, w: e.w ?? null, mark: e.mark };
+      if (state.graph.directed) {
+        prim.directed = true;
+        const bend = gl.bend?.[e.id];
+        if (bend) prim.bend = bend;
+      }
+      put(prim);
     }
     for (const n of state.graph.nodes) {
       const p = gl.pos[n.id];
@@ -399,6 +472,11 @@ export function buildScene(state: State, layout: Layout, viewport: { width: numb
     const id = `cmp:${a}:${b}` as const;
     if (prims.has(id)) continue;
     put({ kind: 'link', id, from: a, to: b, style: 'compare', result: cmp.result ?? null });
+    // The same bracket between the two mirrored tree nodes.
+    if (mirrored.has(a) && mirrored.has(b)) {
+      const mid = `cmp:${ids.mirror(a)}:${ids.mirror(b)}` as const;
+      if (!prims.has(mid)) put({ kind: 'link', id: mid, from: ids.mirror(a), to: ids.mirror(b), style: 'compare', result: cmp.result ?? null });
+    }
   }
 
   return { prims, width: viewport.width, height: layout.height };

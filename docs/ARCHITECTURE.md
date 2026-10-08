@@ -23,7 +23,9 @@ type Id = string;
 //   'e:3'      element created at input index 3 (moves with the value)
 //   'e:aux:5'  element created in array 'aux' at index 5
 //   'n:7'      tree node with key 7 / graph node 7
+//   'h:e:3'    the implicit-tree node mirroring element e:3 (ids.mirror; scene only)
 //   'g:2-5'    undirected graph edge between nodes 2 and 5 (smaller id first)
+//   'a:2>5'    directed arc from node 2 to node 5 (ids.arc; directed graphs only)
 //   'c:3,4'    DP grid cell row 3, col 4
 //   'f:12'     call frame #12
 //   'q:9'      panel item #9
@@ -42,7 +44,7 @@ step are applied in order but rendered as one animated transition.
 ```ts
 type MarkKind =
   | 'visited' | 'frontier' | 'settled' | 'active' | 'pivot' | 'key' | 'done' | 'stale';
-type RegionKind = 'sorted' | 'eliminated' | 'less' | 'greaterEq' | 'unscanned' | 'window';
+type RegionKind = 'sorted' | 'eliminated' | 'less' | 'greaterEq' | 'unscanned' | 'window' | 'ordered';
 
 type VizEvent =
   // transient (cleared at the start of the next step)
@@ -55,6 +57,7 @@ type VizEvent =
   | { t: 'set'; slot: Slot; value: number }            // write into slot; mints element if empty
   | { t: 'clear'; slot: Slot }                         // slot becomes empty (aux buffers)
   | { t: 'array'; name: ArrayName; size: number }      // declare/resize an array (aux)
+  | { t: 'array.tree'; arr: ArrayName }                // also draw arr as its implicit binary tree
   // annotations
   | { t: 'pointer'; name: string; at: Slot | null }
   | { t: 'var'; name: string; value: Scalar }
@@ -70,9 +73,11 @@ type VizEvent =
   | { t: 'node.relink'; id: Id; parent: Id | null; side: 'L' | 'R' | null }   // detach + attach
   | { t: 'node.remove'; id: Id }                       // must have no children
   | { t: 'node.set'; id: Id; key: number }
+  | { t: 'forest' }                                    // several roots, n-ary children by pointer
   // One-child delete is: detach(node) → relink(child, grandparent, side) → remove(node).
   // Root delete is the same with parent null (relink(child, null, null) makes it root).
   // graphs (topology is fixed at load; only marks/labels change)
+  | { t: 'graph'; nodes; edges; directed?: true }      // topology, declared once (directed: arcs a → b)
   | { t: 'edge.mark'; id: Id; as: 'relaxed' | 'tree' | 'rejected' | null }
   | { t: 'label'; id: Id; text: string | null }        // e.g. dist under a node
   // DP grid
@@ -102,8 +107,42 @@ Notes that the code enforces (src/engine/reducer.ts):
 - An ask whose answer is an empty slot ("where does the key land?") is a `choice`
   over "slot k" labels. A later `ids.slot(arr, i)` with clickable empty slots would
   let it become a `pick`; not needed for the MVP.
+- `array.flat` (view only): an array whose values are labels (ids, parent
+  pointers) is drawn as equal-height cells, so height never suggests size.
+  Union-find's `parent[]` uses it.
 - `order` asks: the UI shows the pool in a neutral order (by label/id), never in
   `ask.pool` order, because a module may supply the pool in answer order.
+- `{ t: 'array.tree', arr }` (round 4, heap) declares that array `arr` is also drawn
+  as its implicit binary tree (slot i's children are 2i + 1 and 2i + 2). It sets
+  `state.implicitTree` and changes no data; the array must exist. Modules declare it
+  in `initialState`. The scene gives every element in `arr` a `tnode` keyed
+  `ids.mirror(elementId)` = `h:<element id>` with `ref: <element id>`, at the
+  position of the slot it occupies NOW, and one `tedge` per occupied parent/child
+  slot pair keyed by the child slot (`te:a[4]`), so a swap moves the same element in
+  both views while the edges stay put. Compares between two elements of `arr` get a
+  second bracket between their tree nodes; marks, reads and compare flags show on
+  both. Picks stay on the array cells (the ask's ids are element ids).
+- Region kind `ordered` ("in order"): slots where the structure's order already
+  holds (build-heap: every slot after k heads a heap).
+- `graph` may carry `directed: true` (round 4, topological sort): every edge is an
+  arc a → b with id `ids.arc(a, b)` = `a:<a>><b>` (`ids.edge` is unchanged and stays
+  undirected); `GraphState.directed` is set; a duplicate arc throws, a reverse pair is
+  two arcs. Undirected graphs carry no `directed` key and render exactly as before.
+  Arc prims (`gedge` with `directed: true` and an optional `bend`) are drawn by
+  `render/Arc.tsx`: a stroke from rim to rim plus a filled arrowhead in the stroke's
+  token colour (marks keep their non-colour cues: `rejected` is dashed).
+- An output list is a `queue`-kind panel that is only pushed to (topological sort's
+  `order`); the trace screen titles it by name ("Order", first … last).
+- `{ t: 'forest' }` (round 4, union-find) switches an EMPTY tree (no root yet) to a
+  forest: `state.forest` is set and `state.root` stays null; any number of nodes may
+  have parent null; `node.add` / `node.relink` with side null attach under a parent
+  by pointer (children are read from `parent`, never from left/right; a side throws);
+  a relink that would close a cycle throws; `node.remove` refuses a node that still
+  has children. BST trees (one root, sides) are untouched.
+- `label` also writes text on a tree node (`TreeNode.text`, absent until labelled);
+  graph nodes keep priority when both exist. The renderer draws a tree node's text
+  ABOVE the circle (edges to children fan out below), and a compare bracket between
+  labelled tree nodes starts above the label.
 
 ### Step
 
@@ -133,10 +172,11 @@ Immutable. The reducer returns a new object, sharing untouched sub-objects.
 type ElementState = { id: Id; value: number; mark: MarkKind | null };
 type ArrayState = { name: ArrayName; slots: (Id | null)[] };
 type PanelState = { kind: PanelKind; items: PanelItem[] };            // pq kept sorted by (key, id)
-type TreeNode = { id: Id; key: number; parent: Id | null; left: Id | null; right: Id | null; mark: MarkKind | null };
+type TreeNode = { id: Id; key: number; parent: Id | null; left: Id | null; right: Id | null; mark: MarkKind | null; text?: string | null };
 type GraphState = {
   nodes: { id: Id; label: string; mark: MarkKind | null; text: string | null }[];
   edges: { id: Id; a: Id; b: Id; w?: number; mark: 'relaxed' | 'tree' | 'rejected' | null }[];
+  directed?: true;                                   // arcs a → b
 };
 type GridState = { rows: number; cols: number; rowLabels: string[]; colLabels: string[];
                    cells: Record<string, { value: number; deps: [number, number][] }> };
@@ -224,10 +264,11 @@ type Prim =
   | { kind: 'bar';    id: Id; x: number; y: number; w: number; h: number; value: number; mark: MarkKind | null; arr: ArrayName; index: number }
   | { kind: 'caret';  id: `p:${string}`; name: string; x: number; y: number; visible: boolean }
   | { kind: 'region'; id: `r:${string}`; kind2: RegionKind; x: number; y: number; w: number; h: number; visible: boolean }
-  | { kind: 'tnode';  id: Id; x: number; y: number; key: number; mark: MarkKind | null }
+  | { kind: 'tnode';  id: Id; x: number; y: number; key: number; mark: MarkKind | null; ref?: Id; text?: string }   // ref: mirrored element; text: label
   | { kind: 'tedge';  id: `te:${Id}`; x1: number; y1: number; x2: number; y2: number }   // child → parent, keyed by child
   | { kind: 'gnode';  id: Id; x: number; y: number; label: string; text: string | null; mark: MarkKind | null }
-  | { kind: 'gedge';  id: Id; x1: number; y1: number; x2: number; y2: number; w?: number; mark: string | null }
+  | { kind: 'gedge';  id: Id; x1: number; y1: number; x2: number; y2: number; w?: number; mark: string | null;
+      directed?: true; bend?: number }   // bend: control-point offset of a curved arc (directed graphs only)
   | { kind: 'cell';   id: Id; x: number; y: number; value: number | null; deps: Id[]; fresh: boolean }
   | { kind: 'row';    id: Id; panel: string; order: number; label: string; key?: number; stale?: boolean }
   | { kind: 'frame';  id: Id; depth: number; label: string; active: boolean }
@@ -249,6 +290,19 @@ Tree edges are keyed by the child node, so a relink animates the line's endpoint
   changes if its path changes. `x = cx + Σ_{d=1..depth} (±) span / 2^d`, `y = d × rowH`.
   Depth capped at 5 by input validation (span/2⁵ ≥ 28 px at 900 px wide). On phones
   the SVG uses `viewBox` and scales; a horizontal scroll container is the fallback.
+- **Implicit tree of an array (heap):** positions belong to slots, computed once from
+  the largest size the array reaches: slot i at depth d = ⌊log₂(i + 1)⌋, position
+  p = i − (2^d − 1), `x = pad + (p + ½) · inner / 2^d`, `y = y0 + d × rowH`. It sits
+  right under the arrays. The trace's layout width reserves `2^D × (2r + gap)` where
+  D is the deepest level that can hold two nodes (`crowdedLevel`).
+- **Forest (union-find):** every node that ever exists owns one column, so a tree of
+  s nodes spans s columns and the forest always spans n. Roots sit side by side in id
+  order at the centre of their span; children (in id order) are packed half a column
+  in, so a single child hangs straight below. Column width and rows are fixed once per
+  run; positions come from each state's parent pointers, so a relinked node (and its
+  subtree) moves on the move spring. Rows are 96 units: an edge to a far child stays
+  clear of the nearer children it passes (measured over 53,000 states: never closer
+  than 3 units to another node's rim). Roots' labels sit above them.
 - **Recursion tree (quick/merge sort):** node for segment `[lo, hi]` sits at
   `x = midpoint of the segment's array cells`, `y = depth × rowH`. Aligns visually with
   the array above it, stable by construction.
@@ -256,6 +310,14 @@ Tree edges are keyed by the child node, so a relink animates the line's endpoint
   column, nodes in a column are ordered by id and spread vertically; then one pass of
   barycenter ordering to reduce crossings. Presets may ship hand-placed coordinates.
   Computed once per input; edges are straight lines with labels at the midpoint.
+  Directed acyclic graphs take their column from the longest path from a source
+  instead (every arc points right; a cycle falls back to the BFS layering). Each arc
+  gets the smallest `bend` (a quadratic curve, control point pushed along the left
+  normal; either side) whose curve keeps clear of every other node's circle first,
+  then of node labels and the box, then of other arcs it would run along (crossings
+  are fine). When some arc cannot clear, the columns get up to five extra rows of
+  height and the first placement that clears is kept (measured: 0 of 2,500 random
+  DAGs leave an arc through a node at desktop and phone widths).
 - **Grid:** `cellW = min(44, available / (cols + 1))`.
 
 All layouts return positions in an abstract coordinate space; the renderer maps to
@@ -295,7 +357,8 @@ React components consume `Scene` and render `<svg viewBox>`. Each primitive is a
 interface AlgorithmModule<I> {
   meta: { id: string; title: string; family: 'search' | 'sort' | 'tree' | 'graph' | 'dp';
           renderers: ('array' | 'tree' | 'graph' | 'grid')[]; panels: PanelKind[];
-          tieBreak: string; caps: { maxSteps: number; maxSize: number } };
+          tieBreak: string; caps: { maxSteps: number; maxSize: number };
+          fieldLabels?: Record<string, string> };   // "Edit input" labels by URL key, when the shared wording does not fit
   pseudocode: { lines: string[] };                       // 1-based; later: per-language maps
   invariant: { name: string; sentence: string };         // shown under the lens
   initialState: (input: I) => State;                     // builds arrays/graph/grid

@@ -4,7 +4,7 @@
 
 import type { Id, PanelItem, Slot, Step, VizEvent } from './events';
 import { cellKey, ids } from './ids';
-import type { ArrayState, GridCell, State, TreeNode } from './state';
+import type { ArrayState, GraphState, GridCell, State, TreeNode } from './state';
 import { elementAt, refToId, slotOf } from './state';
 
 class EngineError extends Error {
@@ -52,6 +52,13 @@ export function applyEvent(s: State, ev: VizEvent): State {
       }
       return { ...s, arrays: { ...s.arrays, [ev.name]: { name: ev.name, slots } } };
     }
+    case 'array.flat':
+      if (!s.arrays[ev.arr]) throw new EngineError(`array.flat: no array ${ev.arr}`);
+      if (s.flatArrays?.includes(ev.arr)) return s;
+      return { ...s, flatArrays: [...(s.flatArrays ?? []), ev.arr] };
+    case 'array.tree':
+      if (!s.arrays[ev.arr]) throw new EngineError(`array.tree: no array ${ev.arr}`);
+      return { ...s, implicitTree: ev.arr };
     case 'move': {
       if (!s.elements[ev.id]) throw new EngineError(`move: unknown element ${ev.id}`);
       const from = slotOf(s, ev.id);
@@ -186,9 +193,13 @@ export function applyEvent(s: State, ev: VizEvent): State {
       const node = s.tree[ev.id];
       if (!node) throw new EngineError(`node.remove: unknown ${ev.id}`);
       if (node.left || node.right) throw new EngineError(`node.remove: ${ev.id} still has children`);
+      if (s.forest && Object.values(s.tree).some((n) => n.parent === ev.id)) throw new EngineError(`node.remove: ${ev.id} still has children`);
       const d = detach(s, ev.id);
       return { ...d, tree: omit(d.tree, ev.id) };
     }
+    case 'forest':
+      if (s.root !== null) throw new EngineError(`forest: the tree already has a root (${s.root})`);
+      return { ...s, forest: true };
     case 'node.set': {
       const node = s.tree[ev.id];
       if (!node) throw new EngineError(`node.set: unknown ${ev.id}`);
@@ -202,16 +213,18 @@ export function applyEvent(s: State, ev: VizEvent): State {
         if (seen.has(n.id)) throw new EngineError(`graph: duplicate node ${n.id}`);
         seen.add(n.id);
       }
+      const edgeIds = new Set<Id>();
       for (const e of ev.edges) {
         if (!seen.has(e.a) || !seen.has(e.b)) throw new EngineError(`graph: edge ${e.id} references unknown node`);
+        if (ev.directed && edgeIds.has(e.id)) throw new EngineError(`graph: duplicate arc ${e.id}`);
+        edgeIds.add(e.id);
       }
-      return {
-        ...s,
-        graph: {
-          nodes: ev.nodes.map((n) => ({ id: n.id, label: n.label, mark: null, text: null })),
-          edges: ev.edges.map((e) => (e.w === undefined ? { id: e.id, a: e.a, b: e.b, mark: null } : { id: e.id, a: e.a, b: e.b, w: e.w, mark: null })),
-        },
+      const graph: GraphState = {
+        nodes: ev.nodes.map((n) => ({ id: n.id, label: n.label, mark: null, text: null })),
+        edges: ev.edges.map((e) => (e.w === undefined ? { id: e.id, a: e.a, b: e.b, mark: null } : { id: e.id, a: e.a, b: e.b, w: e.w, mark: null })),
       };
+      if (ev.directed) graph.directed = true;
+      return { ...s, graph };
     }
     case 'edge.mark': {
       if (!s.graph) throw new EngineError('edge.mark: no graph');
@@ -223,6 +236,8 @@ export function applyEvent(s: State, ev: VizEvent): State {
       return { ...s, graph: { ...s.graph, edges } };
     }
     case 'label': {
+      const treeNode = s.tree[ev.id];
+      if (treeNode && !s.graph?.nodes.some((n) => n.id === ev.id)) return { ...s, tree: { ...s.tree, [ev.id]: { ...treeNode, text: ev.text } } };
       if (!s.graph) throw new EngineError('label: no graph');
       const idx = s.graph.nodes.findIndex((n) => n.id === ev.id);
       if (idx === -1) throw new EngineError(`label: unknown node ${ev.id}`);
@@ -305,10 +320,20 @@ function detach(s: State, id: Id): State {
   return { ...s, tree: { ...s.tree, [parent.id]: p, [id]: { ...node, parent: null } } };
 }
 
-/** Attaches a floating node under a parent side (or as root). */
+/** Attaches a floating node under a parent side (or as root). In a forest,
+ *  parent null makes one more root and side null adds a child by pointer. */
 function attach(s: State, id: Id, parentId: Id | null, side: 'L' | 'R' | null): State {
   const node = s.tree[id];
   if (!node) throw new EngineError(`attach: unknown node ${id}`);
+  if (s.forest) {
+    if (parentId === null) return { ...s, tree: { ...s.tree, [id]: { ...node, parent: null } } };
+    if (side !== null) throw new EngineError(`attach: forest children have no side (${id} under ${parentId})`);
+    if (!s.tree[parentId]) throw new EngineError(`attach: unknown parent ${parentId}`);
+    for (let cur: Id | null = parentId; cur !== null; cur = s.tree[cur]?.parent ?? null) {
+      if (cur === id) throw new EngineError(`attach: ${id} under ${parentId} would make a cycle`);
+    }
+    return { ...s, tree: { ...s.tree, [id]: { ...node, parent: parentId } } };
+  }
   if (parentId === null) {
     if (s.root !== null && s.root !== id) throw new EngineError(`attach: root already ${s.root}`);
     return { ...s, root: id, tree: { ...s.tree, [id]: { ...node, parent: null } } };

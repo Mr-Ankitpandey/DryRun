@@ -100,7 +100,7 @@ export function EditInput({ module, input, mode, level, onNavigate, onClose }: E
           .map((k) => (
             <TextField
               key={k}
-              label={FIELD_LABELS[k] ?? k}
+              label={module.meta.fieldLabels?.[k] ?? FIELD_LABELS[k] ?? k}
               mono
               autoComplete="off"
               spellCheck={false}

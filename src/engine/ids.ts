@@ -12,6 +12,10 @@ export const ids = {
     const [x, y] = String(a) < String(b) ? [a, b] : [b, a];
     return `g:${x}-${y}`;
   },
+  /** Directed arc a → b (a graph with `directed: true`); `edge` stays undirected. */
+  arc: (a: number | string, b: number | string): Id => `a:${a}>${b}`,
+  /** The implicit-tree node that mirrors an array element (heap array ↔ tree). */
+  mirror: (elementId: Id): Id => `h:${elementId}`,
   cell: (r: number, c: number): Id => `c:${r},${c}`,
   frame: (n: number): Id => `f:${n}`,
   item: (n: number): Id => `q:${n}`,

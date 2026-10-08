@@ -46,7 +46,9 @@ export function PrimGroup({ id, linkRef = null, x, y, opacity = 1, kind = 'move'
   const inst = useInstant();
   const enterInstant = useEnterInstant();
   const linked = useLinked(id, linkRef);
-  const handlers = useHoverHandlers(id);
+  // A prim that stands for another (a tree node mirroring an array element)
+  // publishes that id, so hovering either side links both.
+  const handlers = useHoverHandlers(linkRef ?? id);
   // Each arcing x change flips the variant label (…0 ↔ …1) so the keyframes
   // run again; adjusting state during render is React's "derive from props" pattern.
   const [arc, setArc] = useState<{ x: number; label: keyof typeof LIFT_VARIANTS }>({ x, label: 'rest' });

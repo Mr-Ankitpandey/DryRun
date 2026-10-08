@@ -5,7 +5,7 @@
 
 import type { Id, Ref, Scalar, Step } from '@/engine/events';
 import type { Layout } from '@/engine/layout';
-import { PAD, computeLayout } from '@/engine/layout';
+import { PAD, computeLayout, crowdedLevel } from '@/engine/layout';
 import { GRAPH_NODE_R } from '@/engine/layout/graph';
 import { TREE_NODE_R } from '@/engine/layout/tree';
 import type { Run } from '@/engine/run';
@@ -147,6 +147,8 @@ export const CELL = { desktop: 56, mobile: 40 } as const;
 const NODE_GAP = { desktop: 24, mobile: 6 } as const;
 /** DP grid cell size (the layout's maximum is 44). */
 const GRID_CELL = { desktop: 44, mobile: 32 } as const;
+/** Narrowest forest column: a root's label ("rank 2", 10-unit mono) is 36 units wide; 10 columns still fit a phone without scrolling. */
+const FOREST_LABEL_W = 44;
 /** Column pitch of the layered graph layout. */
 const GRAPH_COL = { desktop: 150, mobile: 88 } as const;
 const MIN_W = { desktop: 480, mobile: 320 } as const;
@@ -163,11 +165,20 @@ export function layoutWidth(run: Run, form: FormFactor): number {
     const n = Math.max(1, ...Object.values(probe.array.rows).map((r) => r.n));
     widths.push(2 * PAD + n * CELL[form]);
   }
+  if (probe.implicitTree) {
+    // Slots have fixed places: the deepest level with two nodes sets the pitch.
+    const d = crowdedLevel(probe.implicitTree.pos.length);
+    if (d >= 0) widths.push(2 * PAD + 2 ** d * (2 * TREE_NODE_R + NODE_GAP[form]));
+  }
   if (probe.tree) {
     const depth = Math.max(1, probe.tree.depth);
     const sep = 2 * TREE_NODE_R + NODE_GAP[form];
     const span = (sep * 2 ** depth) / 2;
     widths.push(2 * (span * (1 - 2 ** -depth) + PAD + TREE_NODE_R));
+  }
+  if (probe.forest) {
+    // Each node owns a column; roots carry a short label ("rank 2") above.
+    widths.push(2 * PAD + probe.forest.n * Math.max(2 * TREE_NODE_R + NODE_GAP[form], FOREST_LABEL_W));
   }
   if (probe.graph) {
     const cols = new Set(Object.values(probe.graph.pos).map((p) => Math.round(p.x))).size;
