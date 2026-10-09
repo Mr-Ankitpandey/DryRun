@@ -15,7 +15,7 @@ there's no account, and your progress stays in your browser.
 [![Node](https://img.shields.io/badge/node-%3E%3D20.19-13233A)](#run-it-locally)
 [![License](https://img.shields.io/badge/license-all%20rights%20reserved-5A6A7B)](#license)
 
-![The DryRun landing page: the headline "Stop watching algorithms. Start tracing them." next to a live binary search on a graph-paper grid, asking "lo = 0, hi = 8. Where does mid land?"](docs/readme/hero.png)
+![The DryRun landing page: the headline "Stop watching algorithms. Start tracing them." next to a live binary search on a graph-paper grid, asking "lo = 0, hi = 8. Where does mid land?"](.github/readme/hero.png)
 
 ## Why
 
@@ -43,7 +43,7 @@ there's no account, and your progress stays in your browser.
 
 ### Tracing
 
-![A binary search trace after a wrong answer: the learner's pick (30, at index 6) is a red dashed ghost, the true lo (21, at index 5) has a blue ring, and the panel says "Not quite. lo moves to mid + 1, not two past mid." with the mistake kind "Boundary / off-by-one".](docs/readme/ghost.png)
+![A binary search trace after a wrong answer: the learner's pick (30, at index 6) is a red dashed ghost, the true lo (21, at index 5) has a blue ring, and the panel says "Not quite. lo moves to mid + 1, not two past mid." with the mistake kind "Boundary / off-by-one".](.github/readme/ghost.png)
 
 - **Ghost of the wrong guess**: your pick in red dashes, the truth ringed in blue, and the rule in one line.
 - **Three levels**: Guided asks the key questions, Full asks every one, and Blind freezes the stage between questions.
@@ -52,17 +52,17 @@ there's no account, and your progress stays in your browser.
 - **Real code beside the trace**: pseudocode, JavaScript, Python, C++ or Java, with the current line highlighted.
 - **Honest internals**: Dijkstra strikes stale entries through before skipping them, and BST delete shows the successor copy instead of a magic swap.
 
-![Binary heap insert: the array and its implicit tree side by side, with the same comparison between 5 and 1 bracketed in both views.](docs/readme/heap.png)
+![Binary heap insert: the array and its implicit tree side by side, with the same comparison between 5 and 1 bracketed in both views.](.github/readme/heap.png)
 
 *Linked views: the heap's array and its tree are the same elements, so a swap moves one value in both.*
 
-![Dijkstra with the code panel set to C++: line 12, "dist[v] = dist[u] + w;", is highlighted while the narration says the old entry (4, 1) stays and will pop stale.](docs/readme/code.png)
+![Dijkstra with the code panel set to C++: line 12, "dist[v] = dist[u] + w;", is highlighted while the narration says the old entry (4, 1) stays and will pop stale.](.github/readme/code.png)
 
 *Every listing is mapped line by line to the pseudocode and run in tests against a reference implementation.*
 
 ### Blind mode
 
-![Quick sort in Blind mode: the stage still shows the unsorted array while the question asks "The scan ends with i = 1. Where does the pivot 3 land?" and the narration says "12 steps run hidden. Keep the state in your head."](docs/readme/blind.png)
+![Quick sort in Blind mode: the stage still shows the unsorted array while the question asks "The scan ends with i = 1. Where does the pivot 3 land?" and the narration says "12 steps run hidden. Keep the state in your head."](.github/readme/blind.png)
 
 In Blind mode the stage freezes and the steps up to the next question run hidden.
 You keep the state in your head, answer, and then watch the hidden steps replay.
@@ -70,7 +70,7 @@ It's the closest thing to tracing on paper.
 
 ### Learning loop
 
-![The progress page: one small chart per algorithm showing prediction accuracy over the last 30 days, and a bar list of mistakes by kind, led by "Boundary / off-by-one".](docs/readme/progress.png)
+![The progress page: one small chart per algorithm showing prediction accuracy over the last 30 days, and a bar list of mistakes by kind, led by "Boundary / off-by-one".](.github/readme/progress.png)
 
 - **Mistake bank**: wrong answers grouped by kind, each with its rule, and a link that re-traces the exact input.
 - **Practise a mistake**: build a new input that sets up the same catch.
@@ -79,7 +79,7 @@ It's the closest thing to tracing on paper.
 
 ### Built for how you study
 
-<img src="docs/readme/phone.png" alt="A BST search on a phone in the dark theme: the tree fills the top, and the question sheet at the bottom asks &quot;x = 37, at 25. Which node is next on the path?&quot;" width="300" align="right">
+<img src=".github/readme/phone.png" alt="A BST search on a phone in the dark theme: the tree fills the top, and the question sheet at the bottom asks &quot;x = 37, at 25. Which node is next on the path?&quot;" width="300" align="right">
 
 - **Works on phones**: the question sheet sits at the bottom, within thumb reach.
 - **Keyboard first**: <kbd>Space</kbd> plays, <kbd>←</kbd> <kbd>→</kbd> step, <kbd>1</kbd>–<kbd>9</kbd> answer, <kbd>Enter</kbd> submits, <kbd>?</kbd> lists shortcuts.
@@ -153,8 +153,8 @@ flowchart LR
 - **Seeded randomness.** Every random input comes from a seeded generator, and the
   seed lives in the URL.
 
-The full design is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). The visual
-language, called "graph paper", is described in [`docs/DESIGN.md`](docs/DESIGN.md).
+The visual language is called "graph paper": state looks written down on a
+notebook grid, and a wrong guess is a red-pencil sketch next to the pen-drawn truth.
 
 ## Quality
 
@@ -215,7 +215,6 @@ src/
   lib/          seeded RNG, URL codec, versioned local storage
   styles/       colour and type tokens
 e2e/            Playwright specs (flows, accessibility, performance)
-docs/           plan, architecture, design and algorithm specs
 ```
 
 ## Roadmap

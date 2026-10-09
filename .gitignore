@@ -12,3 +12,6 @@ playwright-report/
 .env.*
 # Marketing material (the ad, its music and renders) stays local, off GitHub.
 marketing/
+# Working notes and planning docs stay local, off GitHub.
+CLAUDE.md
+docs/
